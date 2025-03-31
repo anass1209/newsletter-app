@@ -1,0 +1,8 @@
+# Créez un fichier .gitignore contenant :
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.vscode/
+.idea/

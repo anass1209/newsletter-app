@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}News Aggregator - Home{% endblock %}
+
+{% block content %}
+    {% if not app_ready %}
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Initialization Error</h4>
+            <p>The application failed to start properly. Please check the server logs.</p>
+        </div>
+    {% else %}
+        <div class="row">
+            <!-- API and email configuration -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if is_configured %}
+                            <div class="alert alert-success fixed">
+                                <h5>📌 Configuration Saved</h5>
+                                <p>Your API keys have been successfully saved.</p>
+                                <p>Newsletters will be sent to: <strong>{{ user_email }}</strong></p>
+                                <hr>
+                                <button class="btn btn-sm btn-outline-primary" type="button" onclick="toggleConfigForm()">
+                                    Edit Configuration
+                                </button>
+                            </div>
+                            <form id="configForm" method="post" action="{{ url_for('index') }}" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="tavily_api_key" class="form-label">Tavily API Key</label>
+                                    <input type="password" class="form-control" id="tavily_api_key" name="tavily_api_key" placeholder="Your Tavily API Key" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="gemini_api_key" class="form-label">Gemini API Key</label>
+                                    <input type="password" class="form-control" id="gemini_api_key" name="gemini_api_key" placeholder="Your Gemini API Key" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="user_email" class="form-label">Your Email</label>
+                                    <input type="email" class="form-control" id="user_email" name="user_email" placeholder="Email to receive news" value="{{ user_email }}" required>
+                                </div>
+                                <button type="submit" name="setup" value="1" class="btn btn-primary">Update</button>
+                                <button type="button" class="btn btn-secondary" onclick="toggleConfigForm()">Cancel</button>
+                            </form>
+                        {% else %}
+                            <form method="post" action="{{ url_for('index') }}">
+                                <div class="mb-3">
+                                    <label for="tavily_api_key" class="form-label">Tavily API Key</label>
+                                    <input type="password" class="form-control" id="tavily_api_key" name="tavily_api_key" placeholder="Your Tavily API Key" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="gemini_api_key" class="form-label">Gemini API Key</label>
+                                    <input type="password" class="form-control" id="gemini_api_key" name="gemini_api_key" placeholder="Your Gemini API Key" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="user_email" class="form-label">Your Email</label>
+                                    <input type="email" class="form-control" id="user_email" name="user_email" placeholder="Email to receive news" value="{{ user_email }}" required>
+                                </div>
+                                <button type="submit" name="setup" value="1" class="btn btn-primary">Save Configuration</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Newsletter launch -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">Launch a Newsletter</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if is_configured %}
+                            {% if active_topic %}
+                                <div class="alert alert-success fixed">
+                                    <h5>📬 Newsletter Active</h5>
+                                    <p>You are currently receiving news about: <strong>{{ active_topic }}</strong></p>
+                                    <div id="timing-info">
+                                        {% if last_execution %}
+                                            <p>Last sent: <strong>{{ last_execution }}</strong></p>
+                                        {% endif %}
+                                        {% if next_execution %}
+                                            <p>Next send: <strong>{{ next_execution }}</strong></p>
+                                            <p>Time remaining: <span id="nextUpdate" class="badge bg-info text-white" 
+                                                {% if time_remaining %}data-remaining="{{ time_remaining }}"{% endif %}>
+                                                {{ time_remaining if time_remaining else 'in 1 hour' }}
+                                            </span></p>
+                                        {% endif %}
+                                    </div>
+                                    <p>Sent to: <strong>{{ user_email }}</strong></p>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <form method="post" action="{{ url_for('stop_newsletter') }}">
+                                            <button type="submit" class="btn btn-danger">Stop Newsletter</button>
+                                        </form>
+                                        <button type="button" class="btn btn-primary" onclick="toggleTopicForm()">
+                                            Change Topic
+                                        </button>
+                                    </div>
+                                </div>
+                                <form id="topicForm" method="post" action="{{ url_for('index') }}" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="topic" class="form-label">New Topic of Interest</label>
+                                        <input type="text" class="form-control" id="topic" name="topic" placeholder="E.g., Artificial Intelligence, Space, Medicine..." required>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <button type="submit" class="btn btn-success">Launch This Newsletter</button>
+                                        <button type="button" class="btn btn-secondary" onclick="toggleTopicForm()">Cancel</button>
+                                    </div>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{{ url_for('index') }}">
+                                    <div class="mb-3">
+                                        <label for="topic" class="form-label">Topic of Interest</label>
+                                        <input type="text" class="form-control" id="topic" name="topic" placeholder="E.g., Artificial Intelligence, Space, Medicine..." required>
+                                    </div>
+                                    <button type="submit" class="btn btn-success">Launch Hourly Newsletter</button>
+                                </form>
+                            {% endif %}
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <p>Please configure your settings in the form on the left first.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">How It Works</h5>
+                    </div>
+                    <div class="card-body how-it-works">
+                        <ol>
+                            <li>Configure your API keys and email address</li>
+                            <li>Choose a news topic that interests you</li>
+                            <li>Our system will search for the latest relevant information on that topic</li>
+                            <li>You’ll receive an email summarizing this information every hour</li>
+                            <li>Stop the newsletter or change the topic anytime</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (document.getElementById('nextUpdate')) {
+            startLiveCountdown();
+        }
+    });
+
+    // Start real-time countdown for newsletter updates
+    function startLiveCountdown() {
+        updateTimingInfo();
+        setInterval(updateTimingInfo, 10000); // Update every 10 seconds
+    }
+
+    // Fetch and update timing info via AJAX
+    function updateTimingInfo() {
+        fetch('/api/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.active) {
+                    const nextUpdateEl = document.getElementById('nextUpdate');
+                    if (nextUpdateEl) {
+                        nextUpdateEl.textContent = data.time_remaining;
+                    }
+                    if (data.time_remaining === "very soon") {
+                        setTimeout(() => { window.location.reload(); }, 15000);
+                    }
+                } else {
+                    window.location.reload();
+                }
+            })
+            .catch(error => console.error('Error updating timing:', error));
+    }
+</script>
+{% endblock %}
