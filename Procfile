@@ -1,1 +1,1 @@
-web: gunicorn src.news_aggregator.app:app
+web: gunicorn wsgi:application
