@@ -73,6 +73,15 @@ def set_credentials(tavily_key: str, gemini_key: str, user_email: str, sender_em
     if sender_password:
         SENDER_APP_PASSWORD = sender_password
     
+    # Définir également les variables d'environnement pour assurer la persistance
+    os.environ["TAVILY_API_KEY"] = tavily_key
+    os.environ["GEMINI_API_KEY"] = gemini_key
+    os.environ["USER_EMAIL"] = user_email
+    if sender_email:
+        os.environ["SENDER_EMAIL"] = sender_email
+    if sender_password:
+        os.environ["SENDER_APP_PASSWORD"] = sender_password
+    
     # Verify values have been set
     tavily_set = bool(TAVILY_API_KEY)
     gemini_set = bool(GEMINI_API_KEY)

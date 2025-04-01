@@ -75,12 +75,8 @@ def index():
                     # Generate and send the newsletter immediately
                     send_newsletter_now(compiled_graph, topic, session['user_email'])
                     
-                    # Format HTML correctement pour un affichage optimal
                     success_html = f'''
                     <div class="d-flex align-items-center">
-                        <div class="me-3">
-                            <i class="fas fa-check-circle fa-2x text-success"></i>
-                        </div>
                         <div>
                             <h5 class="mb-1">Newsletter Sent Successfully!</h5>
                             <p class="mb-0">Your newsletter about "<strong>{topic}</strong>" has been generated and sent to <strong>{session['user_email']}</strong>.</p>
@@ -187,21 +183,45 @@ def index():
     )
 
 
+# Modification à la fonction send_newsletter_now
+
 def send_newsletter_now(graph, topic, user_email):
     """Generate and send a newsletter immediately."""
     from .graph import GraphState
     from . import config
+    # Force le rechargement des informations de configuration
+    from .config import load_credentials_from_env
     
     try:
         logging.info(f"--- Starting newsletter generation for topic: '{topic}' ---")
         
+        # Recharger explicitement les configurations depuis l'environnement local
+        try:
+            # Tenter de charger depuis .env.local s'il existe
+            if os.path.exists('.env.local'):
+                logging.info("Loading credentials from .env.local")
+                with open('.env.local', 'r') as f:
+                    for line in f:
+                        if line.strip() and not line.startswith('#'):
+                            key, value = line.strip().split('=', 1)
+                            os.environ[key] = value
+                load_credentials_from_env()
+        except Exception as e:
+            logging.warning(f"Error loading from .env.local: {e}")
+        
+        # Vérification explicite des clés
+        tavily_key = config.TAVILY_API_KEY
+        gemini_key = config.GEMINI_API_KEY
+        
+        logging.info(f"API Keys check - Tavily: {'SET' if tavily_key else 'NOT SET'}, Gemini: {'SET' if gemini_key else 'NOT SET'}")
+        
         # Verify that API keys are configured before proceeding
-        if not config.TAVILY_API_KEY:
-            logging.error("Tavily API key is not configured for newsletter generation")
+        if not tavily_key:
+            logging.error("Tavily API key not configured for newsletter generation")
             raise Exception("Tavily API key not configured. Please update your settings.")
             
-        if not config.GEMINI_API_KEY:
-            logging.error("Gemini API key is not configured for newsletter generation")
+        if not gemini_key:
+            logging.error("Gemini API key not configured for newsletter generation")
             raise Exception("Gemini API key not configured. Please update your settings.")
         
         # Create input state
@@ -233,6 +253,7 @@ def send_newsletter_now(graph, topic, user_email):
     except Exception as e:
         logging.error(f"Newsletter generation error: {str(e)}")
         raise
+
 
 
 @app.errorhandler(404)
