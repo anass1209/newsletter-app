@@ -37,31 +37,22 @@ def index():
             user_email = request.form.get('user_email', '').strip()
             
             logging.info(f"Configuration attempt with email: {user_email}")
-            logging.info(f"Tavily API key provided: {bool(tavily_key)} (length: {len(tavily_key)})")
-            logging.info(f"Gemini API key provided: {bool(gemini_key)} (length: {len(gemini_key)})")
             
             if not all([tavily_key, gemini_key, user_email]):
                 flash('All configuration fields are required.', 'error')
                 return redirect(url_for('index'))
                 
             from .config import set_credentials
-            success = set_credentials(
+            set_credentials(
                 tavily_key=tavily_key, 
                 gemini_key=gemini_key, 
                 user_email=user_email,
                 sender_email=os.getenv('SENDER_EMAIL', 'default@example.com'),
                 sender_password=os.getenv('SENDER_APP_PASSWORD', '0000')
             )
-            
-            if success:
-                session['user_email'] = user_email
-                session['configured'] = True
-                logging.info("Configuration saved successfully")
-                flash('Configuration saved successfully.', 'success')
-            else:
-                logging.error("Configuration failed - credentials not properly set")
-                flash('Configuration error. Please check logs for details.', 'error')
-                
+            session['user_email'] = user_email
+            session['configured'] = True
+            flash('Configuration saved successfully.', 'success')
             return redirect(url_for('index'))
             
         # Handle newsletter topic submission
@@ -82,12 +73,10 @@ def index():
             try:
                 if compiled_graph:
                     stop_scheduling()
-                    # Changed from 1 hour to 24 hours for daily updates
-                    interval_hours = 24
-                    start_scheduling(compiled_graph, topic, session['user_email'], interval_hours=interval_hours)
-                    flash(f'Monitoring started for "{topic}". First email sent, next ones daily.', 'success')
+                    start_scheduling(compiled_graph, topic, session['user_email'], interval_hours=1)
+                    flash(f'Monitoring started for "{topic}". First email sent, next ones hourly.', 'success')
                     session['active_topic'] = topic
-                    logging.info(f"Successfully started monitoring for topic: {topic} with {interval_hours}h interval")
+                    logging.info(f"Successfully started monitoring for topic: {topic}")
                 else:
                     logging.error("Compiled graph is None, cannot start monitoring")
                     flash('Error: Unable to start monitoring service.', 'error')
@@ -118,29 +107,26 @@ def index():
     
     if scheduler_state['last_execution']:
         try:
-            # Paris timezone
+            # Fuseau horaire de Paris
             paris_tz = pytz.timezone('Europe/Paris')
             
-            # Last execution
+            # Dernière exécution
             last_exec = datetime.fromisoformat(scheduler_state['last_execution'])
             last_execution = last_exec.astimezone(paris_tz).strftime("%H:%M:%S")
             
-            # Next execution
+            # Prochaine exécution
             if scheduler_state['next_execution']:
                 next_exec = datetime.fromisoformat(scheduler_state['next_execution'])
                 next_execution = next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
-                next_execution_iso = scheduler_state['next_execution']  # ISO format for JavaScript
+                next_execution_iso = scheduler_state['next_execution']  # Format ISO pour JavaScript
                 
-                # Calculate remaining time
+                # Calculer le temps restant
                 now = datetime.now(paris_tz)
                 if next_exec > now:
                     diff_seconds = (next_exec - now).total_seconds()
-                    hours = int(diff_seconds // 3600)
-                    minutes = int((diff_seconds % 3600) // 60)
-                    seconds = int(diff_seconds % 60)
-                    time_remaining = f"{hours}h {minutes}m {seconds}s"
+                    time_remaining = f"{int(diff_seconds // 60)} min {int(diff_seconds % 60)} sec"
                 else:
-                    time_remaining = "very soon"
+                    time_remaining = "très bientôt"
         except Exception as e:
             logging.error(f"Error formatting dates: {e}")
 
@@ -152,7 +138,7 @@ def index():
         user_email=user_email,
         last_execution=last_execution,
         next_execution=next_execution,
-        next_execution_iso=next_execution_iso,  # ISO format for JavaScript
+        next_execution_iso=next_execution_iso,  # Format ISO pour JavaScript
         time_remaining=time_remaining
     )
 
@@ -165,41 +151,40 @@ def api_status():
     
     if scheduler_state['next_execution']:
         try:
-            # Use Paris timezone
+            # Utiliser le fuseau horaire de Paris
             paris_tz = pytz.timezone('Europe/Paris')
             
-            # Convert ISO string to datetime object
+            # Convertir la chaîne ISO en objet datetime
             next_exec = datetime.fromisoformat(scheduler_state['next_execution'])
             
-            # Format for human-readable display
+            # Formater pour l'affichage humain
             next_execution = next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
             
-            # Get current time in the same timezone
+            # Obtenir le temps actuel dans le même fuseau
             now = datetime.now(paris_tz)
             
-            # Calculate the difference
+            # Calculer la différence
             if next_exec > now:
                 diff_seconds = (next_exec - now).total_seconds()
-                hours = int(diff_seconds // 3600)
-                minutes = int((diff_seconds % 3600) // 60)
+                minutes = int(diff_seconds // 60)
                 seconds = int(diff_seconds % 60)
-                time_remaining = f"{hours}h {minutes}m {seconds}s"
+                time_remaining = f"{minutes} min {seconds} sec"
             else:
-                time_remaining = "very soon"
+                time_remaining = "très bientôt"
                 
         except Exception as e:
             logging.error(f"Error formatting API dates: {e}")
-            # Add more details for debugging
+            # Ajouter plus de détails pour le débogage
             logging.error(f"next_execution string: {scheduler_state['next_execution']}")
     
-    # Return more detailed information for easier client-side debugging
+    # Renvoyer des informations plus détaillées pour faciliter le débogage côté client
     response_data = {
         "active": scheduler_state['active'],
         "topic": scheduler_state['topic'],
-        "next_execution": scheduler_state['next_execution'],  # ISO format for JavaScript
-        "formatted_next": next_execution,                     # Readable format
-        "time_remaining": time_remaining,                     # Calculated remaining time
-        "server_time": datetime.now(pytz.timezone('Europe/Paris')).isoformat()  # Server time
+        "next_execution": scheduler_state['next_execution'],  # ISO format pour JavaScript
+        "formatted_next": next_execution,                     # Format lisible
+        "time_remaining": time_remaining,                     # Temps restant calculé
+        "server_time": datetime.now(pytz.timezone('Europe/Paris')).isoformat()  # Heure serveur
     }
     
     return jsonify(response_data)
@@ -207,7 +192,6 @@ def api_status():
 @app.route('/stop', methods=['POST'])
 def stop_newsletter():
     """Stop the active newsletter"""
-    logging.info("Stop newsletter requested")
     stop_scheduling()
     session.pop('active_topic', None)
     flash('Monitoring stopped successfully.', 'success')
@@ -219,7 +203,6 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def server_error(e):
-    logging.error(f"500 error occurred: {str(e)}")
     return render_template('500.html'), 500
 
 if __name__ == '__main__':
