@@ -1,1 +1,1 @@
-web: gunicorn wsgi:application --log-file - --timeout 120 --preload
+web: gunicorn wsgi:application --log-file -

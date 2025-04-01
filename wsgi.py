@@ -1,56 +1,58 @@
-import os
+# wsgi.py
 import sys
+import os
 import logging
 
-# Configure logging
+# Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(module)s] - %(message)s')
 
-# Add app directory to Python path
-app_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.join(app_dir, 'src')
+# Ajouter le répertoire racine au chemin Python
+root_dir = os.path.dirname(__file__)
+sys.path.insert(0, root_dir)
+logging.info(f"Added root directory to Python path: {root_dir}")
 
-# Ensure src is in the path first
-if src_dir not in sys.path:
-    logging.info(f"Added src directory to Python path: {src_dir}")
+# Ajouter le dossier src au chemin Python
+src_dir = os.path.join(root_dir, 'src')
+if os.path.exists(src_dir):
     sys.path.insert(0, src_dir)
+    logging.info(f"Added src directory to Python path: {src_dir}")
 
-# Add the app directory to path
-if app_dir not in sys.path:
-    logging.info(f"Added root directory to Python path: {app_dir}")
-    sys.path.insert(0, app_dir)
-
+# Log the Python path for debugging
 logging.info(f"Python path: {sys.path}")
 
-try:
-    # Import Flask app directly
-    from src.news_aggregator import app as application
-    # THIS IS THE KEY: ensure the app is exported as 'application'
-    application = application  # Make sure application variable is defined
-    logging.info("Successfully imported Flask app")
-except ImportError:
-    logging.error("Failed to import app directly, trying alternative import path")
+# Créer une fonction pour l'application Flask
+def get_app():
     try:
-        # Try alternative import path
-        from src.news_aggregator import app as application
-        application = application  # Ensure application variable is defined
-        logging.info("Successfully imported Flask app via alternative path")
-    except Exception as e:
-        logging.error(f"Error importing Flask app: {e}")
+        # Import ici pour éviter les erreurs de référence circulaire
+        from src.news_aggregator.app import app as flask_app
+        logging.info("Successfully imported Flask app")
+        return flask_app
+    except ImportError as e:
+        logging.error(f"Failed to import Flask app: {e}")
+        # Try to determine what went wrong
+        try:
+            import importlib
+            spec = importlib.util.find_spec('src.news_aggregator')
+            logging.info(f"src.news_aggregator module spec: {spec}")
+        except Exception as e2:
+            logging.error(f"Error checking module spec: {e2}")
         raise
 
-# Set debug mode based on environment
-if os.environ.get('FLASK_DEBUG', 'False').lower() == 'true':
-    application.debug = True
+# Exposer l'application pour Gunicorn
+try:
+    application = get_app()
+except Exception as e:
+    logging.critical(f"Failed to get Flask app: {e}")
+    # Provide a basic WSGI app for fallback
+    def application(environ, start_response):
+        status = '500 Internal Server Error'
+        headers = [('Content-type', 'text/plain; charset=utf-8')]
+        start_response(status, headers)
+        return [b'Application failed to start. Check logs for details.']
 
-# Check if application is callable (as required by WSGI)
-if not callable(application):
-    logging.error("Application is not callable! Type: %s", type(application))
-    # Convert Flask app to a callable if needed
-    from werkzeug.middleware.dispatcher import DispatcherMiddleware
-    application = DispatcherMiddleware(application)
-
-# This section only runs when executing wsgi.py directly
-if __name__ == '__main__':
-    # Run app directly if executed
-    port = int(os.environ.get('PORT', 5000))
-    application.run(host='0.0.0.0', port=port)
+# Pour les tests locaux
+if __name__ == "__main__":
+    try:
+        application.run()
+    except Exception as e:
+        logging.critical(f"Error running Flask app: {e}")
