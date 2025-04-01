@@ -5,8 +5,8 @@ import os
 # Ajouter le répertoire racine au chemin Python
 sys.path.insert(0, os.path.dirname(__file__))
 
-# Ajouter le dossier src/news_aggregator/ au chemin Python
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src', 'news_aggregator'))
+# Ajouter le dossier src/ au chemin Python pour que les imports absolus fonctionnent
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 # Créer une fonction pour l'application Flask
 def get_app():
