@@ -3,14 +3,11 @@
 {% block title %}Server Error{% endblock %}
 
 {% block content %}
-<div class="card text-center">
-    <div class="card-header bg-danger text-white">
-        <h2>Error 500</h2>
-    </div>
-    <div class="card-body">
-        <h5 class="card-title">Internal Server Error</h5>
-        <p class="card-text">Oops! An error occurred on our server. The technical team has been notified.</p>
-        <a href="{{ url_for('index') }}" class="btn btn-primary">Back to Home</a>
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h2>500 - Server Error</h2>
+        <p class="lead">Something went wrong on our end. Please try again later.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Return to Home</a>
     </div>
 </div>
 {% endblock %}
