@@ -32,9 +32,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.location.hash === '#status') {
         const statusElement = document.getElementById('status');
         if (statusElement) {
-            statusElement.scrollIntoView({ behavior: 'smooth' });
+            // Scroll avec délai pour s'assurer que la page est chargée
+            setTimeout(function() {
+                statusElement.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
         }
     }
+    
 });
 
 // Function to toggle password visibility

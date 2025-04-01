@@ -109,7 +109,7 @@ def index():
     active_topic = session.get('active_topic', None)
     user_email = session.get('user_email', '')
 
-    # Format timing info
+     # Format timing info
     last_execution = None
     next_execution = None
     next_execution_iso = None
@@ -120,18 +120,35 @@ def index():
             # Paris timezone
             paris_tz = pytz.timezone('Europe/Paris')
             
-            # Last execution
-            last_exec = datetime.fromisoformat(scheduler_state['last_execution'])
-            last_execution = last_exec.astimezone(paris_tz).strftime("%H:%M:%S")
+            # Last execution - S'assurer que c'est aware
+            last_exec_str = scheduler_state['last_execution']
+            # Convertir la chaîne ISO en datetime
+            if '+' not in last_exec_str and 'Z' not in last_exec_str:
+                # Si la date est naive (sans fuseau horaire), on la considère comme UTC
+                last_exec = datetime.fromisoformat(last_exec_str).replace(tzinfo=pytz.UTC)
+            else:
+                # Si elle a déjà un fuseau horaire, fromisoformat le détectera
+                last_exec = datetime.fromisoformat(last_exec_str)
+            
+            # Convertir en fuseau horaire local (Paris)
+            last_exec = last_exec.astimezone(paris_tz)
+            last_execution = last_exec.strftime("%H:%M:%S")
             
             # Next execution
             if scheduler_state['next_execution']:
-                next_exec = datetime.fromisoformat(scheduler_state['next_execution'])
-                next_execution = next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
-                next_execution_iso = scheduler_state['next_execution']  # ISO format for JavaScript
+                next_exec_str = scheduler_state['next_execution']
+                # Même logique pour next_exec
+                if '+' not in next_exec_str and 'Z' not in next_exec_str:
+                    next_exec = datetime.fromisoformat(next_exec_str).replace(tzinfo=pytz.UTC)
+                else:
+                    next_exec = datetime.fromisoformat(next_exec_str)
+                
+                next_exec = next_exec.astimezone(paris_tz)
+                next_execution = next_exec.strftime("%H:%M:%S")
+                next_execution_iso = next_exec.isoformat()  # Format ISO pour JavaScript
                 
                 # Calculate remaining time
-                now = datetime.now(paris_tz)
+                now = datetime.now(paris_tz)  # S'assurer que now a aussi un fuseau horaire
                 if next_exec > now:
                     diff_seconds = (next_exec - now).total_seconds()
                     
@@ -153,6 +170,8 @@ def index():
                     time_remaining = "very soon"
         except Exception as e:
             logging.error(f"Error formatting dates: {e}")
+            logging.error(f"Last execution string: {scheduler_state.get('last_execution')}")
+            logging.error(f"Next execution string: {scheduler_state.get('next_execution')}")
 
     return render_template(
         'index.html', 
@@ -197,7 +216,7 @@ def start_monitoring():
         logging.exception(f"Error starting scheduling for topic '{topic}': {str(e)}")
         flash(f'Error starting monitoring: {str(e)}', 'error')
         
-    # Add anchor to redirect to status section
+    # Utiliser un fragment d'URL pour l'ancre
     return redirect(url_for('index', _anchor='status'))
 
 @app.route('/api/status')
@@ -212,11 +231,16 @@ def api_status():
             # Use Paris timezone
             paris_tz = pytz.timezone('Europe/Paris')
             
-            # Convert ISO string to datetime object
-            next_exec = datetime.fromisoformat(scheduler_state['next_execution'])
+            # Convert ISO string to datetime object - with timezone awareness
+            next_exec_str = scheduler_state['next_execution']
+            if '+' not in next_exec_str and 'Z' not in next_exec_str:
+                next_exec = datetime.fromisoformat(next_exec_str).replace(tzinfo=pytz.UTC)
+            else:
+                next_exec = datetime.fromisoformat(next_exec_str)
             
             # Format for human-readable display
-            next_execution = next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
+            next_exec = next_exec.astimezone(paris_tz)
+            next_execution = next_exec.strftime("%H:%M:%S")
             
             # Get current time in same timezone
             now = datetime.now(paris_tz)
@@ -244,14 +268,13 @@ def api_status():
                 
         except Exception as e:
             logging.error(f"Error formatting API dates: {e}")
-            # Add more details for debugging
             logging.error(f"next_execution string: {scheduler_state['next_execution']}")
     
     # Return more detailed information for client-side debugging
     response_data = {
         "active": scheduler_state['active'],
         "topic": scheduler_state['topic'],
-        "next_execution": scheduler_state['next_execution'],  # ISO format for JavaScript
+        "next_execution": scheduler_state.get('next_execution'),  # ISO format for JavaScript
         "formatted_next": next_execution,                     # Readable format
         "time_remaining": time_remaining,                     # Calculated remaining time
         "server_time": datetime.now(pytz.timezone('Europe/Paris')).isoformat(),  # Server time
