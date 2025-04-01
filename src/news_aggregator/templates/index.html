@@ -38,7 +38,7 @@
 
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3><i class="fas fa-rss me-2" aria-hidden="true"></i>Generate Newsletter</h3>
-                    <a href="{{ url_for('modify_config') }}" class="btn btn-outline-primary">
+                    <a href="{{ url_for('modify_config') }}" class="btn btn-outline-primary" id="modify-config-btn">
                         <i class="fas fa-cog me-2" aria-hidden="true"></i>Modify Configuration
                     </a>
                 </div>
@@ -46,7 +46,7 @@
                 <div class="form-container">
                     <p class="text-muted mb-4">Enter a topic to generate a newsletter with the latest information.</p>
 
-                    <form method="post" action="{{ url_for('index') }}">
+                    <form method="post" action="{{ url_for('index') }}" id="newsletter-form">
                         <div class="mb-4">
                             <label for="topic_input" class="form-label">Newsletter Topic</label>
                             <div class="input-group input-group-lg">
@@ -65,11 +65,13 @@
                     </form>
                 </div>
 
+                <!-- Rest of content remains the same -->
                 <div class="card mt-4">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-info-circle me-2" aria-hidden="true"></i>How It Works</h5>
                     </div>
                     <div class="card-body">
+                        <!-- Content remains the same -->
                         <div class="row align-items-center">
                             <div class="col-lg-7">
                                 <div class="how-it-works-steps">
@@ -129,7 +131,7 @@
             {% else %}
                 <div class="form-container">
                     <h3><i class="fas fa-cogs me-2" aria-hidden="true"></i>Configure Newsletter</h3>
-                    <form method="post" action="{{ url_for('index') }}">
+                    <form method="post" action="{{ url_for('index') }}" id="config-form">
                         <input type="hidden" name="setup" value="1">
 
                         <div class="row">
@@ -171,7 +173,7 @@
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="save-config-btn">
                                 <i class="fas fa-save me-2" aria-hidden="true"></i>Save Configuration
                             </button>
                         </div>
@@ -215,14 +217,42 @@
         // Generate button loading state
         const generateBtn = document.getElementById('generateBtn');
         if (generateBtn) {
+            const form = document.getElementById('newsletter-form');
             generateBtn.addEventListener('click', function(event) {
-                const form = this.closest('form');
                 if (!form.checkValidity()) {
                     event.preventDefault();
                     form.reportValidity();
                 } else {
                     this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
                     this.disabled = true;
+                    // Add visual feedback that the form is being submitted
+                    document.querySelector('.form-container').classList.add('opacity-75');
+                    form.submit();
+                }
+            });
+        }
+        
+        // Add click event listener for the Modify Configuration button
+        const modifyConfigBtn = document.getElementById('modify-config-btn');
+        if (modifyConfigBtn) {
+            modifyConfigBtn.addEventListener('click', function(event) {
+                // Display a loading indicator on the button
+                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+                this.classList.add('disabled');
+            });
+        }
+        
+        // Add event listener for the configuration form
+        const configForm = document.getElementById('config-form');
+        if (configForm) {
+            const saveConfigBtn = document.getElementById('save-config-btn');
+            configForm.addEventListener('submit', function(event) {
+                if (!this.checkValidity()) {
+                    event.preventDefault();
+                    this.reportValidity();
+                } else if (saveConfigBtn) {
+                    saveConfigBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+                    saveConfigBtn.disabled = true;
                 }
             });
         }

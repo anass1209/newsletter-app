@@ -141,38 +141,13 @@ def send_newsletter_now(graph, topic, user_email):
         logging.error(f"Newsletter generation error: {str(e)}")
         raise
 
-@app.route('/modify_config', methods=['GET', 'POST'])
-def modify_config():
-    """Allow users to modify their configuration"""
-    if request.method == 'POST':
-        tavily_key = request.form.get('tavily_api_key', '').strip()
-        gemini_key = request.form.get('gemini_api_key', '').strip()
-        user_email = request.form.get('user_email', '').strip()
-        
-        if not all([tavily_key, gemini_key, user_email]):
-            flash('All configuration fields are required.', 'error')
-            return redirect(url_for('modify_config'))
-            
-        from .config import set_credentials
-        set_credentials(
-            tavily_key=tavily_key, 
-            gemini_key=gemini_key, 
-            user_email=user_email,
-            sender_email=os.getenv('SENDER_EMAIL', 'default@example.com'),
-            sender_password=os.getenv('SENDER_APP_PASSWORD', '0000')
-        )
-        session['user_email'] = user_email
-        session['configured'] = True
-        flash('Configuration updated successfully.', 'success')
-        return redirect(url_for('index'))
-    
-    # For GET requests, show the config form
-    user_email = session.get('user_email', '')
-    return render_template('modify_config.html', user_email=user_email)
+
+
 
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
+
 
 @app.errorhandler(500)
 def server_error(e):

@@ -4,31 +4,13 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    initializeTooltips();
 
     // Store user timezone for better time display
-    try {
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        document.cookie = `timezone=${encodeURIComponent(timezone)}; path=/; max-age=86400; SameSite=Lax`;
-    } catch(e) {
-        console.warn("Could not detect timezone:", e);
-    }
+    storeUserTimezone();
 
     // Automatically hide non-error alerts after 5 seconds
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert:not(.alert-danger):not(.alert-warning)');
-        alerts.forEach(function(alert) {
-            if (bootstrap && bootstrap.Alert) {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            } else {
-                alert.style.display = 'none';
-            }
-        });
-    }, 5000);
+    setupAutoDismissAlerts();
 
     // Password toggle functionality
     initPasswordToggles();
@@ -37,15 +19,52 @@ document.addEventListener('DOMContentLoaded', function() {
     initFormSubmitHandlers();
     
     // Animated scroll to elements with ID if specified in hash
-    if (window.location.hash) {
-        const targetElement = document.querySelector(window.location.hash);
-        if (targetElement) {
-            setTimeout(function() {
-                smoothScrollTo(targetElement);
-            }, 300);
-        }
-    }
+    handleHashScroll();
+    
+    // Ensure proper form submission and button handling
+    setupButtonEventListeners();
 });
+
+/**
+ * Initialize Bootstrap tooltips
+ */
+function initializeTooltips() {
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+}
+
+/**
+ * Store user's timezone in a cookie
+ */
+function storeUserTimezone() {
+    try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        document.cookie = `timezone=${encodeURIComponent(timezone)}; path=/; max-age=86400; SameSite=Lax`;
+    } catch(e) {
+        console.warn("Could not detect timezone:", e);
+    }
+}
+
+/**
+ * Set up automatic dismissal of success alerts
+ */
+function setupAutoDismissAlerts() {
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert:not(.alert-danger):not(.alert-warning)');
+        alerts.forEach(function(alert) {
+            if (typeof bootstrap !== 'undefined' && bootstrap.Alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            } else {
+                alert.style.display = 'none';
+            }
+        });
+    }, 5000);
+}
 
 /**
  * Initializes toggle password visibility functionality
@@ -70,19 +89,20 @@ function initPasswordToggles() {
 }
 
 /**
- * Initializes form submission handlers for loading states
+ * Set up form submission handlers with enhanced validation and feedback
  */
 function initFormSubmitHandlers() {
     // Newsletter generation form
-    const generateBtn = document.getElementById('generateBtn');
-    if (generateBtn) {
-        const form = generateBtn.closest('form');
+    const newsletterForm = document.getElementById('newsletter-form');
+    if (newsletterForm) {
+        const generateBtn = document.getElementById('generateBtn');
         
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
+        newsletterForm.addEventListener('submit', function(event) {
+            if (!this.checkValidity()) {
                 event.preventDefault();
-                form.reportValidity();
-            } else {
+                highlightInvalidFields(this);
+                this.reportValidity();
+            } else if (generateBtn) {
                 generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Generating...';
                 generateBtn.disabled = true;
                 // Add subtle animation to button
@@ -92,24 +112,84 @@ function initFormSubmitHandlers() {
     }
     
     // Configuration form
-    const configForms = document.querySelectorAll('form[action*="config"]');
-    configForms.forEach(form => {
-        form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
+    const configForm = document.getElementById('config-form');
+    if (configForm) {
+        const saveBtn = document.getElementById('save-config-btn');
+        
+        configForm.addEventListener('submit', function(event) {
+            if (!this.checkValidity()) {
                 event.preventDefault();
-                form.reportValidity();
-            } else {
-                const submitBtn = form.querySelector('button[type="submit"]');
-                if (submitBtn) {
-                    const originalText = submitBtn.innerHTML;
-                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
-                    submitBtn.disabled = true;
-                    
-                    // Store original button text to restore if there's an error
-                    submitBtn.setAttribute('data-original-text', originalText);
-                }
+                highlightInvalidFields(this);
+                this.reportValidity();
+            } else if (saveBtn) {
+                saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
+                saveBtn.disabled = true;
             }
         });
+    }
+}
+
+/**
+ * Set up specific event listeners for buttons
+ */
+function setupButtonEventListeners() {
+    // Modify Configuration Button
+    const modifyBtn = document.getElementById('modify-config-btn');
+    if (modifyBtn) {
+        modifyBtn.addEventListener('click', function() {
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Loading...';
+            this.classList.add('disabled');
+            window.location.href = this.getAttribute('href');
+        });
+    }
+    
+    // Generate Newsletter Button - add direct click handler
+    const generateBtn = document.getElementById('generateBtn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', function(event) {
+            const form = this.closest('form');
+            if (form && !form.checkValidity()) {
+                event.preventDefault();
+                highlightInvalidFields(form);
+                form.reportValidity();
+            } else {
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Generating...';
+                this.disabled = true;
+                form.submit();
+            }
+        });
+    }
+}
+
+/**
+ * Handle scrolling to hash elements
+ */
+function handleHashScroll() {
+    if (window.location.hash) {
+        const targetElement = document.querySelector(window.location.hash);
+        if (targetElement) {
+            setTimeout(function() {
+                smoothScrollTo(targetElement);
+            }, 300);
+        }
+    }
+}
+
+/**
+ * Highlight invalid fields in a form
+ * @param {HTMLFormElement} form - The form to check
+ */
+function highlightInvalidFields(form) {
+    const invalidFields = form.querySelectorAll(':invalid');
+    invalidFields.forEach(field => {
+        field.classList.add('is-invalid');
+        
+        // Add event listener to remove the invalid class once corrected
+        field.addEventListener('input', function() {
+            if (this.validity.valid) {
+                this.classList.remove('is-invalid');
+            }
+        }, { once: true });
     });
 }
 
