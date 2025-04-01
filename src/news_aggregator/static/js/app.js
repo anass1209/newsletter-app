@@ -1,467 +1,5 @@
-/**
- * Newsletter Monitoring Application
- * Professional UX Enhancement
- * 
- * Gère les interactions utilisateur, la validation des formulaires,
- * les animations et les mises à jour automatiques des statuts.
- */
+// src/news_aggregator/static/js/app.js
 
-"use strict";
-
-// Namespace pour éviter les conflits
-const NewsletterApp = {
-    // Configuration
-    config: {
-        alertAutoCloseDelay: 5000,
-        statusRefreshInterval: 30000,
-        animationDuration: 300,
-        progressBarUpdateInterval: 1000
-    },
-    
-    // Initialisation de l'application
-    init: function() {
-        this.setupEventListeners();
-        this.setupAlerts();
-        this.setupCountdown();
-        this.setupFormValidation();
-        this.setupStatusUpdates();
-    },
-    
-    // Mise en place des écouteurs d'événements
-    setupEventListeners: function() {
-        // Gestionnaires pour les toggles de formulaires
-        document.querySelectorAll('[data-toggle]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const target = btn.getAttribute('data-toggle');
-                if (target) {
-                    this.toggleElement(document.getElementById(target));
-                }
-            });
-        });
-        
-        // Gestionnaires pour les boutons de visibilité des mots de passe
-        document.querySelectorAll('.btn-outline-secondary').forEach(btn => {
-            if (btn.onclick && btn.onclick.toString().includes('togglePassword')) {
-                // Remplacement par notre fonction
-                btn.onclick = null;
-                btn.addEventListener('click', (e) => {
-                    const inputId = btn.closest('.input-group').querySelector('input').id;
-                    this.togglePasswordVisibility(inputId);
-                });
-            }
-        });
-    },
-    
-    // Gestion des alertes
-    setupAlerts: function() {
-        setTimeout(() => {
-            document.querySelectorAll('.alert:not(.fixed)').forEach(alert => {
-                this.fadeOutElement(alert);
-            });
-        }, this.config.alertAutoCloseDelay);
-        
-        // Ajouter des gestionnaires pour les boutons de fermeture des alertes
-        document.querySelectorAll('.alert .btn-close').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.fadeOutElement(e.target.closest('.alert'));
-            });
-        });
-    },
-    
-    // Animer la disparition d'un élément
-    fadeOutElement: function(element) {
-        if (!element) return;
-        
-        element.style.transition = `opacity ${this.config.animationDuration}ms ease-out`;
-        element.style.opacity = '0';
-        
-        setTimeout(() => {
-            if (element.parentNode) {
-                element.style.display = 'none';
-                // Optionnel: supprimer complètement du DOM
-                // element.parentNode.removeChild(element);
-            }
-        }, this.config.animationDuration);
-    },
-    
-    // Basculer la visibilité d'un élément
-    toggleElement: function(element) {
-        if (!element) return;
-        
-        if (element.classList.contains('d-none')) {
-            // Afficher l'élément
-            element.classList.remove('d-none');
-            element.style.opacity = '0';
-            
-            // Déclencher le reflow pour que la transition fonctionne
-            element.offsetHeight;
-            
-            element.style.transition = `opacity ${this.config.animationDuration}ms ease-in`;
-            element.style.opacity = '1';
-        } else {
-            // Masquer l'élément
-            element.style.transition = `opacity ${this.config.animationDuration}ms ease-out`;
-            element.style.opacity = '0';
-            
-            setTimeout(() => {
-                element.classList.add('d-none');
-            }, this.config.animationDuration);
-        }
-    },
-    
-    // Basculer la visibilité d'un mot de passe
-    togglePasswordVisibility: function(inputId) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-        
-        const icon = input.parentNode.querySelector('.fa-eye, .fa-eye-slash');
-        
-        if (input.type === 'password') {
-            input.type = 'text';
-            if (icon) {
-                icon.classList.remove('fa-eye');
-                icon.classList.add('fa-eye-slash');
-            }
-        } else {
-            input.type = 'password';
-            if (icon) {
-                icon.classList.remove('fa-eye-slash');
-                icon.classList.add('fa-eye');
-            }
-        }
-    },
-    
-    // Configurer le compte à rebours pour la prochaine mise à jour
-    setupCountdown: function() {
-        const countdownElement = document.getElementById('nextUpdate');
-        if (!countdownElement) return;
-        
-        let nextUpdateTime;
-        
-        // Obtenir le temps de la prochaine mise à jour
-        if (countdownElement.dataset.nextExecution) {
-            nextUpdateTime = new Date(countdownElement.dataset.nextExecution);
-        } else {
-            // Par défaut, dans une heure
-            const now = new Date();
-            nextUpdateTime = new Date(now.getTime() + 60 * 60 * 1000);
-        }
-        
-        const updateCountdown = () => {
-            const now = new Date();
-            const remainingMs = nextUpdateTime - now;
-            
-            if (remainingMs <= 0) {
-                countdownElement.innerHTML = '<span class="badge bg-warning">Très bientôt</span>';
-                
-                // Vérifier l'état après un délai
-                setTimeout(() => {
-                    this.fetchStatusUpdate();
-                }, 30000);
-                return;
-            }
-            
-            // Calculer les minutes et secondes restantes
-            const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
-            
-            // Mettre à jour l'affichage
-            countdownElement.innerHTML = `<span class="time-remaining">${minutes} min ${seconds} sec</span>`;
-            
-            // Mettre à jour toutes les secondes
-            setTimeout(updateCountdown, 1000);
-        };
-        
-        // Démarrer le compte à rebours
-        updateCountdown();
-    },
-    
-    // Configurer la validation des formulaires
-    setupFormValidation: function() {
-        const forms = document.querySelectorAll('.needs-validation');
-        
-        forms.forEach(form => {
-            // Validation à la soumission
-            form.addEventListener('submit', event => {
-                if (!this.validateForm(form)) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                
-                form.classList.add('was-validated');
-            });
-            
-            // Validation en temps réel
-            const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-            inputs.forEach(input => {
-                // Valider lors de la perte de focus
-                input.addEventListener('blur', () => {
-                    this.validateInput(input);
-                });
-                
-                // Réinitialiser les erreurs lors de la saisie
-                input.addEventListener('input', () => {
-                    input.classList.remove('is-invalid');
-                    
-                    // Supprimer les messages d'erreur personnalisés
-                    const feedbackEl = input.parentNode.querySelector('.validation-message.invalid');
-                    if (feedbackEl) {
-                        feedbackEl.remove();
-                    }
-                });
-            });
-        });
-    },
-    
-    // Valider un champ de formulaire
-    validateInput: function(input) {
-        let isValid = input.checkValidity();
-        
-        // Validations personnalisées supplémentaires
-        if (input.type === 'email' && input.value) {
-            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-            isValid = emailPattern.test(input.value);
-            
-            if (!isValid) {
-                this.showValidationError(input, "Veuillez saisir une adresse email valide");
-                return false;
-            }
-        }
-        
-        if (input.id === 'tavily_api_key' && input.value) {
-            if (input.value.length < 20) {
-                this.showValidationError(input, "La clé API semble trop courte");
-                return false;
-            }
-        }
-        
-        if (input.id === 'gemini_api_key' && input.value) {
-            if (input.value.length < 20) {
-                this.showValidationError(input, "La clé API semble trop courte");
-                return false;
-            }
-        }
-        
-        // Appliquer les classes CSS appropriées
-        if (isValid) {
-            input.classList.add('is-valid');
-            input.classList.remove('is-invalid');
-        } else {
-            input.classList.add('is-invalid');
-            input.classList.remove('is-valid');
-            
-            // Afficher un message d'erreur générique si aucun n'a été défini
-            if (!input.parentNode.querySelector('.validation-message.invalid')) {
-                this.showValidationError(input, "Ce champ est requis");
-            }
-        }
-        
-        return isValid;
-    },
-    
-    // Afficher un message d'erreur de validation personnalisé
-    showValidationError: function(input, message) {
-        // Supprimer tout message d'erreur existant
-        const existingMsg = input.parentNode.querySelector('.validation-message.invalid');
-        if (existingMsg) {
-            existingMsg.remove();
-        }
-        
-        // Créer un nouvel élément pour le message d'erreur
-        const feedbackEl = document.createElement('div');
-        feedbackEl.className = 'validation-message invalid';
-        feedbackEl.textContent = message;
-        
-        // Ajouter après l'input ou à la fin du parent
-        const formText = input.parentNode.querySelector('.form-text');
-        if (formText) {
-            input.parentNode.insertBefore(feedbackEl, formText);
-        } else {
-            input.parentNode.appendChild(feedbackEl);
-        }
-        
-        input.classList.add('is-invalid');
-        input.classList.remove('is-valid');
-    },
-    
-    // Valider un formulaire entier
-    validateForm: function(form) {
-        let isValid = true;
-        
-        // Valider tous les champs requis
-        const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
-        inputs.forEach(input => {
-            if (!this.validateInput(input)) {
-                isValid = false;
-            }
-        });
-        
-        return isValid;
-    },
-    
-    // Configurer les mises à jour automatiques du statut
-    setupStatusUpdates: function() {
-        if (!document.querySelector('.status-container')) return;
-        
-        // Mettre à jour le statut périodiquement
-        setInterval(() => {
-            this.fetchStatusUpdate();
-        }, this.config.statusRefreshInterval);
-    },
-    
-    // Récupérer les mises à jour de statut depuis le serveur
-    fetchStatusUpdate: function() {
-        // Afficher un indicateur de mise à jour
-        const statusContainer = document.querySelector('.status-container');
-        if (statusContainer) {
-            statusContainer.classList.add('status-updating');
-        }
-        
-        fetch('/api/status')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Erreur réseau lors de la récupération du statut');
-                }
-                return response.json();
-            })
-            .then(data => {
-                this.updateStatusDisplay(data);
-                // Supprimer l'indicateur de mise à jour
-                if (statusContainer) {
-                    statusContainer.classList.remove('status-updating');
-                }
-            })
-            .catch(error => {
-                console.error('Erreur de récupération du statut:', error);
-                // Supprimer l'indicateur de mise à jour en cas d'erreur également
-                if (statusContainer) {
-                    statusContainer.classList.remove('status-updating');
-                }
-            });
-    },
-    
-    // Mettre à jour l'affichage du statut avec les nouvelles données
-    updateStatusDisplay: function(data) {
-        // Mettre à jour le temps restant s'il est disponible
-        const nextUpdateElement = document.getElementById('nextUpdate');
-        if (nextUpdateElement && data.time_remaining) {
-            nextUpdateElement.innerHTML = `<span class="time-remaining">${data.time_remaining}</span>`;
-        }
-        
-        // Si le monitoring n'est plus actif, recharger la page
-        const statusContainer = document.querySelector('.status-container');
-        if (statusContainer && !data.active) {
-            // Afficher un message de chargement
-            statusContainer.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Chargement...</span>
-                    </div>
-                    <p class="mt-2">Rechargement de la page...</p>
-                </div>
-            `;
-            
-            // Recharger la page après un court délai
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        }
-    }
-};
-
-
-function startCountdown() {
-    // Récupérer l'élément qui contient le temps restant
-    const nextUpdateElement = document.getElementById('nextUpdate');
-    if (!nextUpdateElement) return;
-    
-    // Récupérer les données depuis les attributs data-
-    let nextExecution = nextUpdateElement.dataset.nextExecution;
-    
-    // Si aucune date n'est disponible, utiliser maintenant + 1 heure
-    if (!nextExecution) {
-        console.log("Pas de nextExecution disponible, utilisant l'heure actuelle + 1h");
-        // Par défaut, supposons que la mise à jour est dans 1 heure à partir de maintenant
-        const now = new Date();
-        nextExecution = new Date(now.getTime() + 60*60*1000).toISOString();
-    }
-    
-    console.log("Next execution:", nextExecution);
-    
-    function updateCounter() {
-        // Obtenir l'heure actuelle et l'heure de la prochaine exécution
-        const currentTime = new Date();
-        const nextHour = new Date(nextExecution);
-        
-        // Calculer la différence en millisecondes
-        const diff = nextHour - currentTime;
-        console.log("Différence en ms:", diff);
-        
-        if (diff <= 0) {
-            nextUpdateElement.textContent = "très bientôt";
-            // Après un certain délai, on peut recharger la page pour voir si la mise à jour a été faite
-            setTimeout(() => { 
-                fetch('/api/status')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.next_execution) {
-                            nextExecution = data.next_execution;
-                            updateCounter();
-                        } else {
-                            // Si pas de nouvelle date, recharger
-                            window.location.reload();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erreur lors de la mise à jour du statut:', error);
-                    });
-            }, 30000);
-            return;
-        }
-        
-        // Calculer minutes et secondes
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        // Mettre à jour l'affichage avec les minutes et secondes restantes
-        nextUpdateElement.textContent = `${minutes} min ${seconds} sec`;
-        
-        // Mettre à jour chaque seconde
-        setTimeout(updateCounter, 1000);
-    }
-    
-    // Démarrer le compteur
-    updateCounter();
-}
-
-function updateStatus() {
-    fetch('/api/status')
-        .then(response => response.json())
-        .then(data => {
-            // Mettre à jour le temps restant
-            const nextUpdateElement = document.getElementById('nextUpdate');
-            if (nextUpdateElement && data.next_execution) {
-                // Mettre à jour l'attribut data-
-                nextUpdateElement.dataset.nextExecution = data.next_execution;
-                
-                // Si le compte à rebours n'est pas en cours, le démarrer
-                if (nextUpdateElement.textContent === "NaN min NaN sec") {
-                    startCountdown();
-                }
-            }
-            
-            // Si le monitoring n'est plus actif mais qu'on est sur la page de monitoring
-            if (!data.active && document.querySelector('.status-container')) {
-                window.location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('Erreur lors de la mise à jour du statut:', error);
-        });
-}
-
-
-// Initialiser l'application au chargement du document
 document.addEventListener('DOMContentLoaded', function() {
     // Masquer automatiquement les alertes après quelques secondes
     setTimeout(function() {
@@ -479,9 +17,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialiser le compteur pour la prochaine mise à jour
     if (document.getElementById('nextUpdate')) {
         startCountdown();
-        
-        // Mettre à jour le statut toutes les 30 secondes
-        setInterval(updateStatus, 30000);
+    }
+
+    // Mettre à jour régulièrement les informations de statut 
+    if (document.querySelector('.status-container')) {
+        // Premier appel après 5 secondes
+        setTimeout(refreshStatus, 5000);
+        // Ensuite toutes les 30 secondes
+        setInterval(refreshStatus, 30000);
     }
 
     // Ajouter des écouteurs d'événements pour les boutons de bascule
@@ -494,15 +37,179 @@ document.addEventListener('DOMContentLoaded', function() {
     if (toggleTopicBtn) {
         toggleTopicBtn.addEventListener('click', toggleTopicForm);
     }
-});
-// Vérifier que le bouton "Stop Monitoring" fonctionne correctement
-document.addEventListener('DOMContentLoaded', function() {
+
+    // Gestion du bouton Stop Monitoring
     const stopButton = document.querySelector('form[action="/stop"] button');
     if (stopButton) {
-        stopButton.addEventListener('click', function(event) {
-            // Ajouter un indicateur visuel que le bouton a été cliqué
+        stopButton.addEventListener('click', function() {
             stopButton.disabled = true;
-            stopButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Arrêt en cours...';
+            stopButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Arrêt en cours...';
         });
     }
+
+    // Gestion de la visibilité des mots de passe
+    initPasswordToggles();
 });
+
+// Fonction pour basculer l'affichage du formulaire de configuration
+function toggleConfigForm() {
+    const form = document.getElementById('configForm');
+    if (form) {
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            form.classList.add('form-transition');
+        } else {
+            form.style.display = 'none';
+        }
+    }
+}
+
+// Fonction pour basculer l'affichage du formulaire de sujet
+function toggleTopicForm() {
+    const form = document.getElementById('topicForm');
+    if (form) {
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            form.classList.add('form-transition');
+        } else {
+            form.style.display = 'none';
+        }
+    }
+}
+
+// Fonction pour initialiser les toggles de mots de passe
+function initPasswordToggles() {
+    document.querySelectorAll('.input-group .btn-outline-secondary').forEach(button => {
+        button.addEventListener('click', function() {
+            const input = this.closest('.input-group').querySelector('input[type="password"], input[type="text"]');
+            const icon = this.querySelector('i');
+            
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+    });
+}
+
+// Fonction pour mettre à jour le statut
+function refreshStatus() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            console.log("Status update received:", data);
+            
+            // Si le monitoring n'est plus actif, recharger la page
+            if (document.querySelector('.status-container') && !data.active) {
+                window.location.reload();
+                return;
+            }
+            
+            // Mettre à jour le prochain temps d'exécution
+            updateTimerWithData(data);
+        })
+        .catch(error => {
+            console.error("Error fetching status:", error);
+        });
+}
+
+// Fonction pour mettre à jour le timer avec les données reçues
+function updateTimerWithData(data) {
+    if (!data || !data.next_execution) return;
+    
+    const nextUpdateElement = document.getElementById('nextUpdate');
+    if (!nextUpdateElement) return;
+    
+    // Mettre à jour l'attribut data
+    nextUpdateElement.dataset.nextExecution = data.next_execution;
+    
+    // Si le timer affiche NaN, redémarrer le compte à rebours
+    if (nextUpdateElement.textContent.includes('NaN')) {
+        startCountdown();
+    } else if (data.time_remaining) {
+        // Sinon, simplement mettre à jour le texte
+        nextUpdateElement.textContent = data.time_remaining;
+    }
+}
+
+// Fonction pour le compte à rebours jusqu'à la prochaine mise à jour
+function startCountdown() {
+    const nextUpdateElement = document.getElementById('nextUpdate');
+    if (!nextUpdateElement) return;
+    
+    // Obtenir le temps de référence
+    let nextUpdate = null;
+    
+    if (nextUpdateElement.dataset.nextExecution) {
+        try {
+            // Essayer de parser la date ISO
+            nextUpdate = new Date(nextUpdateElement.dataset.nextExecution);
+            console.log("Next execution parsed:", nextUpdate);
+            
+            // Vérifier si la date est valide
+            if (isNaN(nextUpdate.getTime())) {
+                console.log("Invalid date format, using fallback");
+                nextUpdate = null;
+            }
+        } catch(e) {
+            console.error("Error parsing date:", e);
+            nextUpdate = null;
+        }
+    }
+    
+    // Si pas de date valide, utiliser maintenant + 1 heure comme fallback
+    if (!nextUpdate) {
+        const now = new Date();
+        nextUpdate = new Date(now.getTime() + 60 * 60 * 1000);
+        console.log("Using fallback next execution:", nextUpdate);
+    }
+    
+    // Fonction pour mettre à jour le compte à rebours
+    function updateTimer() {
+        const now = new Date();
+        const diffMs = nextUpdate - now;
+        
+        // Si le temps est dépassé
+        if (diffMs <= 0) {
+            nextUpdateElement.textContent = "très bientôt";
+            
+            // Recharger le statut après 10 secondes
+            setTimeout(refreshStatus, 10000);
+            return;
+        }
+        
+        // Calculer minutes et secondes
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+        
+        // Afficher le temps restant
+        nextUpdateElement.textContent = `${minutes} min ${seconds} sec`;
+        
+        // Mettre à jour chaque seconde
+        setTimeout(updateTimer, 1000);
+    }
+    
+    // Démarrer le compte à rebours
+    updateTimer();
+}
+
+// Ajouter une fonction pour basculer la visibilité du mot de passe
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.parentNode.querySelector('.fa-eye, .fa-eye-slash');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}

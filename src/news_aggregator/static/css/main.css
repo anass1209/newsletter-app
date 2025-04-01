@@ -1,4 +1,4 @@
-/* src/news_aggregator/static/css/main.css - Professional Edition */
+/* src/news_aggregator/static/css/main.css */
 
 :root {
     /* Color system - Professional palette */
@@ -225,15 +225,113 @@
     border-color: #ced4da;
   }
   
-  /* Utility classes */
-  .time-remaining {
-    display: inline-block;
-    background-color: var(--primary-light);
+  /* Icon containers */
+  .icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: rgba(0, 86, 179, 0.1);
+  }
+  
+  .icon-container i {
+    font-size: 1.2rem;
     color: var(--primary-color);
-    padding: 0.25rem 0.75rem;
-    border-radius: 2rem;
+  }
+  
+  /* Styles pour le compteur et les éléments temporels */
+  .time-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(0, 86, 179, 0.1);
+  }
+  
+  .time-block i {
+    font-size: 12px;
+  }
+  
+  #nextUpdate {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.85rem;
     font-weight: 500;
-    font-size: 0.875rem;
+    background-color: rgba(0, 86, 179, 0.1);
+    color: #0056b3;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+  }
+  
+  #nextUpdate:not(:empty) {
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+  }
+  
+  .update-status-panel {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-left: 3px solid #0056b3;
+  }
+  
+  /* Spinner pour l'état de chargement */
+  .spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.15em;
+  }
+  
+  /* Badge avec effet de profondeur */
+  .badge.bg-primary {
+    background-color: #0056b3 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    padding: 0.35rem 0.75rem;
+  }
+  
+  /* Amélioration de la visibilité des dates */
+  #lastUpdate, .next-update-time {
+    font-size: 1rem;
+    color: #212529;
+  }
+  
+  /* How it works section */
+  .how-it-works-steps .step-number .badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+  
+  .how-it-works-steps .step {
+    position: relative;
+  }
+  
+  .how-it-works-steps .step::after {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: 14px;
+    width: 2px;
+    height: calc(100% - 15px);
+    background-color: rgba(0, 86, 179, 0.2);
+    z-index: 0;
+  }
+  
+  .how-it-works-steps .step:last-child::after {
+    display: none;
   }
   
   /* Animation */
@@ -255,6 +353,25 @@
     text-align: center;
   }
   
+  /* Animation pour le bouton Stop */
+  .btn-danger {
+    transition: all 0.3s ease;
+  }
+  
+  .btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+  }
+  
+  .btn-danger:active {
+    transform: translateY(0);
+  }
+  
+  .btn-danger:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .form-container, .status-container {
@@ -265,93 +382,11 @@
       padding: var(--spacing-lg) 0;
     }
     
-    .display-spacing-mobile {
-      margin-top: var(--spacing-md);
+    .update-status-panel .row > div:first-child {
+      margin-bottom: 1rem;
     }
     
     .btn {
       padding: 0.5rem 1rem;
     }
-  }
-  
-  /* Animation for status updates */
-  @keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.6; }
-    100% { opacity: 1; }
-  }
-  
-  .status-updating {
-    animation: pulse 2s infinite;
-  }
-  
-  /* Loading indicator */
-  .loading-indicator {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid rgba(0, 0, 0, 0.1);
-    border-left-color: var(--primary-color);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  
-  .badge {
-    font-weight: 500;
-    padding: 0.35em 0.65em;
-    border-radius: 0.25rem;
-  }
-  
-  .bg-warning {
-    background-color: var(--warning-color) !important;
-    color: #212529;
-  }
-  
-  /* Custom scrollbar for better UX */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #a1a1a1;
-  }
-  
-  /* Clean form validation styles */
-  .was-validated .form-control:valid, .form-control.is-valid {
-    border-color: var(--success-color);
-    background-image: none;
-    padding-right: calc(1.5em + 0.75rem);
-  }
-  
-  .was-validated .form-control:invalid, .form-control.is-invalid {
-    border-color: var(--danger-color);
-    background-image: none;
-    padding-right: calc(1.5em + 0.75rem);
-  }
-  
-  .validation-message {
-    font-size: 0.875rem;
-    margin-top: 0.25rem;
-  }
-  
-  .validation-message.invalid {
-    color: var(--danger-color);
-  }
-  
-  .validation-message.valid {
-    color: var(--success-color);
   }

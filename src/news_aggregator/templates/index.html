@@ -7,8 +7,18 @@
     <div class="col-md-10">
         {% if not app_ready %}
             <div class="alert alert-warning" role="alert">
-                <h4 class="alert-heading">Application not ready</h4>
-                <p>The application is still initializing. Please try again in a few moments.</p>
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-cog fa-spin fa-2x"></i>
+                    </div>
+                    <div>
+                        <h4 class="alert-heading mb-1">Application Initializing</h4>
+                        <p class="mb-0">The services are starting up. This should only take a moment.</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                </div>
             </div>
         {% else %}
             {% if is_configured and active_topic %}
@@ -71,16 +81,20 @@
                                                 </div>
                                                 <div>
                                                     <small class="text-muted d-block">Next update</small>
-                                                    <strong>{{ next_execution }}</strong>
-                                                    <span id="nextUpdate" 
-                                                          data-next-execution="{{ next_execution }}" 
-                                                          class="time-remaining ms-2">
-                                                        {% if time_remaining %}
-                                                            {{ time_remaining }}
-                                                        {% else %}
-                                                            Calculating...
-                                                        {% endif %}
-                                                    </span>
+                                                    <strong class="next-update-time">{{ next_execution }}</strong>
+                                                    <div class="mt-1">
+                                                        <span id="nextUpdate" 
+                                                              data-next-execution="{{ next_execution_iso }}" 
+                                                              class="badge bg-primary">
+                                                            <i class="fas fa-hourglass-half me-1"></i>
+                                                            {% if time_remaining %}
+                                                                {{ time_remaining }}
+                                                            {% else %}
+                                                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                                                                <span class="ms-1">Calculating...</span>
+                                                            {% endif %}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -116,7 +130,7 @@
             {% else %}
                 {% if not is_configured %}
                     <div class="form-container">
-                        <h3>Configure Newsletter</h3>
+                        <h3><i class="fas fa-cogs me-2"></i>Configure Newsletter</h3>
                         <form method="post" action="{{ url_for('index') }}">
                             <input type="hidden" name="setup" value="1">
                             

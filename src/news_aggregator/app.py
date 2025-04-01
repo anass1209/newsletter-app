@@ -102,21 +102,31 @@ def index():
     # Format timing info
     last_execution = None
     next_execution = None
+    next_execution_iso = None
     time_remaining = None
+    
     if scheduler_state['last_execution']:
         try:
+            # Fuseau horaire de Paris
             paris_tz = pytz.timezone('Europe/Paris')
+            
+            # Dernière exécution
             last_exec = datetime.fromisoformat(scheduler_state['last_execution'])
             last_execution = last_exec.astimezone(paris_tz).strftime("%H:%M:%S")
+            
+            # Prochaine exécution
             if scheduler_state['next_execution']:
                 next_exec = datetime.fromisoformat(scheduler_state['next_execution'])
                 next_execution = next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
+                next_execution_iso = scheduler_state['next_execution']  # Format ISO pour JavaScript
+                
+                # Calculer le temps restant
                 now = datetime.now(paris_tz)
                 if next_exec > now:
                     diff_seconds = (next_exec - now).total_seconds()
                     time_remaining = f"{int(diff_seconds // 60)} min {int(diff_seconds % 60)} sec"
                 else:
-                    time_remaining = "very soon"
+                    time_remaining = "très bientôt"
         except Exception as e:
             logging.error(f"Error formatting dates: {e}")
 
@@ -128,6 +138,7 @@ def index():
         user_email=user_email,
         last_execution=last_execution,
         next_execution=next_execution,
+        next_execution_iso=next_execution_iso,  # Format ISO pour JavaScript
         time_remaining=time_remaining
     )
 
@@ -140,25 +151,43 @@ def api_status():
     
     if scheduler_state['next_execution']:
         try:
+            # Utiliser le fuseau horaire de Paris
             paris_tz = pytz.timezone('Europe/Paris')
+            
+            # Convertir la chaîne ISO en objet datetime
             next_exec = datetime.fromisoformat(scheduler_state['next_execution'])
+            
+            # Formater pour l'affichage humain
             next_execution = next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
+            
+            # Obtenir le temps actuel dans le même fuseau
             now = datetime.now(paris_tz)
+            
+            # Calculer la différence
             if next_exec > now:
                 diff_seconds = (next_exec - now).total_seconds()
-                time_remaining = f"{int(diff_seconds // 60)} min {int(diff_seconds % 60)} sec"
+                minutes = int(diff_seconds // 60)
+                seconds = int(diff_seconds % 60)
+                time_remaining = f"{minutes} min {seconds} sec"
             else:
-                time_remaining = "very soon"
+                time_remaining = "très bientôt"
+                
         except Exception as e:
             logging.error(f"Error formatting API dates: {e}")
-
-    return jsonify({
+            # Ajouter plus de détails pour le débogage
+            logging.error(f"next_execution string: {scheduler_state['next_execution']}")
+    
+    # Renvoyer des informations plus détaillées pour faciliter le débogage côté client
+    response_data = {
         "active": scheduler_state['active'],
         "topic": scheduler_state['topic'],
-        "next_execution": scheduler_state['next_execution'],  # Renvoyer la date ISO complète pour JavaScript
-        "formatted_next": next_execution,  # Format lisible pour l'affichage
-        "time_remaining": time_remaining
-    })
+        "next_execution": scheduler_state['next_execution'],  # ISO format pour JavaScript
+        "formatted_next": next_execution,                     # Format lisible
+        "time_remaining": time_remaining,                     # Temps restant calculé
+        "server_time": datetime.now(pytz.timezone('Europe/Paris')).isoformat()  # Heure serveur
+    }
+    
+    return jsonify(response_data)
 
 @app.route('/stop', methods=['POST'])
 def stop_newsletter():
