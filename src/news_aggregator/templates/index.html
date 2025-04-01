@@ -196,7 +196,8 @@
                         <h3><i class="fas fa-rss me-2"></i>Start Newsletter Monitoring</h3>
                         <p class="text-muted mb-4">Choose a topic to monitor and receive regular updates</p>
                         
-                        <form method="post" action="{{ url_for('index') }}">
+                        <!-- MODIFICATION: Changed form action to use the dedicated endpoint -->
+                        <form method="post" action="{{ url_for('start_monitoring') }}">
                             <div class="mb-4">
                                 <label for="topic_input" class="form-label">Topic to Monitor</label>
                                 <div class="input-group input-group-lg">
@@ -307,8 +308,17 @@
         const startButton = document.getElementById('startMonitoringBtn');
         if (startButton) {
             startButton.addEventListener('click', function() {
-                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Starting...';
-                this.disabled = true;
+                // Make sure form is valid before showing loading state
+                const form = this.closest('form');
+                if (form.checkValidity()) {
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Starting...';
+                    this.disabled = true;
+                    // Submit the form explicitly
+                    form.submit();
+                } else {
+                    // If form is invalid, trigger browser validation UI
+                    form.reportValidity();
+                }
             });
         }
 
@@ -318,7 +328,17 @@
             stopButton.addEventListener('click', function() {
                 this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Stopping...';
                 this.disabled = true;
+                // Submit the form explicitly
+                this.closest('form').submit();
             });
+        }
+        
+        // Scroll to status section if URL has the status anchor
+        if (window.location.hash === '#status') {
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                statusElement.scrollIntoView({ behavior: 'smooth' });
+            }
         }
     });
 </script>

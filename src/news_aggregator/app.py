@@ -29,7 +29,10 @@ atexit.register(stop_scheduling)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    # Add extensive logging for debugging form submissions
     if request.method == 'POST':
+        logging.info(f"POST request received at index with form data: {request.form}")
+        
         # Handle configuration setup
         if 'setup' in request.form:
             tavily_key = request.form.get('tavily_api_key', '').strip()
@@ -54,7 +57,7 @@ def index():
             session['configured'] = True
             flash('Configuration saved successfully.', 'success')
             return redirect(url_for('index'))
-            
+        
         # Handle newsletter topic submission
         elif 'topic' in request.form:
             topic = request.form.get('topic', '').strip()
@@ -87,6 +90,11 @@ def index():
                 
             # Add anchor to redirect to status section
             return redirect(url_for('index', _anchor='status'))
+        
+        else:
+            logging.warning(f"POST request without recognized form action. Form data: {request.form}")
+            flash('Unknown form submission. Please try again.', 'warning')
+            return redirect(url_for('index'))
 
     # Sync scheduler state with session
     scheduler_state = get_active_state()
@@ -158,6 +166,40 @@ def index():
         time_remaining=time_remaining
     )
 
+# Create a separate route for starting monitoring
+@app.route('/start_monitoring', methods=['POST'])
+def start_monitoring():
+    logging.info(f"POST request to start_monitoring endpoint with data: {request.form}")
+    topic = request.form.get('topic', '').strip()
+    
+    if not topic:
+        logging.warning("Empty topic detected")
+        flash('Please enter a topic for your newsletter.', 'error')
+        return redirect(url_for('index'))
+        
+    if not session.get('configured') or not session.get('user_email'):
+        logging.warning("Attempted to start newsletter without configuration")
+        flash('Please configure settings before starting a newsletter.', 'error')
+        return redirect(url_for('index'))
+        
+    try:
+        if compiled_graph:
+            stop_scheduling()
+            # Changed from hourly to daily (24 hours)
+            start_scheduling(compiled_graph, topic, session['user_email'], interval_hours=24)
+            flash(f'Monitoring started for "{topic}". First email sent, next ones will be sent daily.', 'success')
+            session['active_topic'] = topic
+            logging.info(f"Successfully started monitoring for topic: {topic}")
+        else:
+            logging.error("Compiled graph is None, cannot start monitoring")
+            flash('Error: Unable to start monitoring service.', 'error')
+    except Exception as e:
+        logging.exception(f"Error starting scheduling for topic '{topic}': {str(e)}")
+        flash(f'Error starting monitoring: {str(e)}', 'error')
+        
+    # Add anchor to redirect to status section
+    return redirect(url_for('index', _anchor='status'))
+
 @app.route('/api/status')
 def api_status():
     """API endpoint for scheduler status (used by AJAX)"""
@@ -221,6 +263,7 @@ def api_status():
 @app.route('/stop', methods=['POST'])
 def stop_newsletter():
     """Stop the active newsletter"""
+    logging.info("Stop newsletter request received")
     try:
         logging.info("Attempting to stop newsletter monitoring...")
         stop_result = stop_scheduling()
