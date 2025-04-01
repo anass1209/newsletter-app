@@ -166,6 +166,8 @@ def get_active_state():
     Returns:
         dict: Informations sur l'état actif du scheduler
     """
+    global next_execution_time  # Déplacer la déclaration globale ici, au début de la fonction
+    
     is_active = scheduler_thread is not None and scheduler_thread.is_alive()
     
     result = {
@@ -197,8 +199,7 @@ def get_active_state():
             if updated_next.hour >= 24:
                 updated_next = updated_next.replace(hour=0, day=updated_next.day+1)
                 
-            global next_execution_time
-            next_execution_time = updated_next
+            next_execution_time = updated_next  # La variable globale est maintenant correctement déclarée
             result["next_execution"] = next_execution_time.isoformat()
     
     return result
