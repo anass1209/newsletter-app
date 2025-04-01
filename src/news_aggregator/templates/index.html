@@ -14,39 +14,155 @@
             </div>
         {% else %}
             {% if is_configured and active_topic %}
+                <!-- DÉBUT SECTION ACTIVE MONITORING -->
                 <div class="status-container">
-                    <div class="row align-items-center">
+                    <!-- Header Section -->
+                    <div class="row mb-4">
                         <div class="col-md-8">
-                            <h3><i class="fas fa-satellite-dish me-2"></i>Active Monitoring</h3>
-                            <p class="lead">Currently monitoring: <strong>{{ active_topic }}</strong></p>
-                            <p><i class="fas fa-envelope me-2"></i>Updates sent to: <strong>{{ user_email }}</strong></p>
-                            
-                            {% if last_execution %}
-                                <div class="row mt-3">
-                                    <div class="col-md-6">
-                                        <p><i class="fas fa-history me-2"></i>Last update: <strong>{{ last_execution }}</strong></p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p><i class="fas fa-clock me-2"></i>Next update: <strong>{{ next_execution }}</strong> 
+                            <div class="d-flex align-items-center">
+                                <div class="status-icon-container me-3">
+                                    <i class="fas fa-satellite-dish pulse-animation"></i>
+                                </div>
+                                <div>
+                                    <h3 class="mb-1">Active Monitoring</h3>
+                                    <p class="lead mb-0">Tracking updates on <strong>{{ active_topic }}</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <span class="badge bg-success mb-2"><i class="fas fa-check-circle me-1"></i> Active</span>
+                            <p class="small text-muted mb-0">Started on {{ last_execution.split(' ')[0] if last_execution else 'today' }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Information Cards -->
+                    <div class="row mb-4">
+                        <!-- Delivery Info -->
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="info-card">
+                                <div class="info-card-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div class="info-card-content">
+                                    <h5>Delivery</h5>
+                                    <p>Updates sent to:</p>
+                                    <p class="text-truncate"><strong>{{ user_email }}</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Last Update -->
+                        <div class="col-md-4 mb-3 mb-md-0">
+                            <div class="info-card">
+                                <div class="info-card-icon">
+                                    <i class="fas fa-history"></i>
+                                </div>
+                                <div class="info-card-content">
+                                    <h5>Last Update</h5>
+                                    <p>Sent at:</p>
+                                    <p><strong>{{ last_execution if last_execution else 'Processing...' }}</strong></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Next Update -->
+                        <div class="col-md-4">
+                            <div class="info-card">
+                                <div class="info-card-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div class="info-card-content">
+                                    <h5>Next Update</h5>
+                                    <p>Expected at:</p>
+                                    <p>
+                                        <strong>{{ next_execution if next_execution else 'Calculating...' }}</strong>
                                         {% if time_remaining %}
-                                            <span id="nextUpdate" data-next-execution="{{ next_execution }}">
-                                                <span class="time-remaining">{{ time_remaining }}</span>
-                                            </span>
+                                        <span id="nextUpdate" data-next-execution="{{ next_execution }}" class="countdown-timer">
+                                            <span class="time-remaining">{{ time_remaining }}</span>
+                                        </span>
                                         {% endif %}
-                                        </p>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Topic Details -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="topic-detail-card">
+                                <h5><i class="fas fa-search me-2"></i>Topic Details</h5>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <p class="mb-2">Your newsletter includes the latest on:</p>
+                                        <div class="topic-keywords">
+                                            {% for keyword in active_topic.split(',') %}
+                                                <span class="topic-keyword">{{ keyword.strip() }}</span>
+                                            {% else %}
+                                                <span class="topic-keyword">{{ active_topic }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                        <p class="mb-1 small">Want to modify your topic?</p>
+                                        <form action="{{ url_for('stop_newsletter') }}" method="post">
+                                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-edit me-1"></i>Change Topic
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
-                            {% endif %}
+                            </div>
                         </div>
-                        <div class="col-md-4 text-center text-md-end mt-3 mt-md-0">
+                    </div>
+                    
+                    <!-- Activity Log -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="activity-log">
+                                <h5><i class="fas fa-list-ul me-2"></i>Activity Log</h5>
+                                <div class="timeline">
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-content">
+                                            <p class="timeline-date">{{ last_execution if last_execution else 'Just now' }}</p>
+                                            <p class="timeline-text">Newsletter delivered to {{ user_email }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-content">
+                                            <p class="timeline-date">{{ last_execution if last_execution else 'Just now' }}</p>
+                                            <p class="timeline-text">Data gathered from multiple sources</p>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-item">
+                                        <div class="timeline-dot"></div>
+                                        <div class="timeline-content">
+                                            <p class="timeline-date">{{ last_execution if last_execution else 'Just now' }}</p>
+                                            <p class="timeline-text">Monitoring started for "{{ active_topic }}"</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="row">
+                        <div class="col-12 text-center">
                             <form action="{{ url_for('stop_newsletter') }}" method="post">
                                 <button type="submit" class="btn btn-danger">
                                     <i class="fas fa-stop-circle me-2"></i>Stop Monitoring
                                 </button>
                             </form>
+                            <p class="small text-muted mt-3">
+                                You will no longer receive updates if you stop monitoring.
+                            </p>
                         </div>
                     </div>
                 </div>
+                <!-- FIN SECTION ACTIVE MONITORING -->
             {% else %}
                 {% if not is_configured %}
                     <div class="form-container">
