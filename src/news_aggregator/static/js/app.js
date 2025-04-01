@@ -80,7 +80,11 @@ function setupAutoDismissAlerts() {
  */
 function initPasswordToggles() {
     document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function(e) {
+            // Empêcher le formulaire de se soumettre quand on clique sur le bouton
+            e.preventDefault();
+            e.stopPropagation();
+            
             const input = this.closest('.input-group').querySelector('input');
             const icon = this.querySelector('i');
             
@@ -105,7 +109,6 @@ function initPasswordToggles() {
         });
     });
 }
-
 /**
  * Set up form submission handlers with validation and loading states
  */
