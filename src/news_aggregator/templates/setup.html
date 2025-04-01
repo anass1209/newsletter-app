@@ -1,39 +1,97 @@
 {% extends "base.html" %}
 
-{% block title %}Configuration - Newsletter Monitor{% endblock %}
+{% block title %}Configuration - Agrégateur d'Actualités{% endblock %}
 
 {% block content %}
-{# This page is likely deprecated as configuration is now in index.html #}
-{# If kept, update form names/structure to match app.py POST handling #}
-
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h4 class="mb-0">Application Configuration</h4>
+<div class="card">
+    <div class="card-header">
+        <h4>Configuration des API et Email</h4>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="mb-3">API Keys</h5>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.tavily_api_key.label(class="form-label") }}
+                    {{ form.tavily_api_key(class="form-control") }}
+                    {% if form.tavily_api_key.errors %}
+                    <div class="text-danger">
+                        {% for error in form.tavily_api_key.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Obtenez une clé sur <a href="https://tavily.com" target="_blank">tavily.com</a></div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.gemini_api_key.label(class="form-label") }}
+                    {{ form.gemini_api_key(class="form-control") }}
+                    {% if form.gemini_api_key.errors %}
+                    <div class="text-danger">
+                        {% for error in form.gemini_api_key.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Obtenez une clé sur <a href="https://ai.google.dev" target="_blank">Google AI Studio</a></div>
+                </div>
             </div>
-            <div class="card-body p-4">
-                <p class="text-danger">Note: This separate setup page might be deprecated. Configuration is typically done on the main page when not already configured.</p>
 
-                {# Example Form Structure (Needs Flask-WTF or manual handling) #}
-                <form method="POST" action="{{ url_for('index') }}"> {# Point to index or a dedicated setup route #}
-                     {# Add hidden field to identify this form, e.g., name="setup_config" value="1" #}
-                     <input type="hidden" name="setup_config" value="1">
-
-                     {# Add form fields for Tavily Key, Gemini Key, User Email, Sender Email, Sender Password #}
-                     {# Example for Tavily Key: #}
-                     <div class="mb-3">
-                        <label for="tavily_api_key" class="form-label">Tavily API Key</label>
-                        <input type="password" class="form-control" id="tavily_api_key" name="tavily_api_key" required>
-                        {# Add toggle button if desired #}
-                     </div>
-
-                     {# ... other fields ... #}
-
-                     <button type="submit" class="btn btn-primary">Save Configuration</button>
-                </form>
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h5 class="mb-3">Configuration Email</h5>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.user_email.label(class="form-label") }}
+                    {{ form.user_email(class="form-control") }}
+                    {% if form.user_email.errors %}
+                    <div class="text-danger">
+                        {% for error in form.user_email.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Adresse où vous recevrez les newsletters</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    {{ form.sender_email.label(class="form-label") }}
+                    {{ form.sender_email(class="form-control") }}
+                    {% if form.sender_email.errors %}
+                    <div class="text-danger">
+                        {% for error in form.sender_email.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="form-text">L'adresse utilisée pour envoyer les emails (ex: votre compte Gmail)</div>
+                </div>
+                
+                <div class="col-12 mb-3">
+                    {{ form.sender_app_password.label(class="form-label") }}
+                    {{ form.sender_app_password(class="form-control") }}
+                    {% if form.sender_app_password.errors %}
+                    <div class="text-danger">
+                        {% for error in form.sender_app_password.errors %}
+                        <small>{{ error }}</small>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="form-text">Pour Gmail, utilisez un "mot de passe d'application" généré dans les paramètres de sécurité</div>
+                </div>
             </div>
-        </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

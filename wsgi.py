@@ -3,81 +3,56 @@ import sys
 import os
 import logging
 
-# Setup basic logging (English)
+# Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(module)s] - %(message)s')
 
-# Add the root directory to the Python path
+# Ajouter le répertoire racine au chemin Python
 root_dir = os.path.dirname(__file__)
 sys.path.insert(0, root_dir)
 logging.info(f"Added root directory to Python path: {root_dir}")
 
-# Add the src directory to the Python path
+# Ajouter le dossier src au chemin Python
 src_dir = os.path.join(root_dir, 'src')
 if os.path.exists(src_dir):
     sys.path.insert(0, src_dir)
     logging.info(f"Added src directory to Python path: {src_dir}")
-else:
-    logging.warning(f"src directory not found at: {src_dir}")
 
 # Log the Python path for debugging
-logging.info(f"Current Python path: {sys.path}")
+logging.info(f"Python path: {sys.path}")
 
-# Create a function to get the Flask app instance
+# Créer une fonction pour l'application Flask
 def get_app():
-    """Imports and returns the Flask app instance."""
     try:
-        # Import here to avoid potential circular dependencies during setup
-        # and ensure paths are correctly configured first.
+        # Import ici pour éviter les erreurs de référence circulaire
         from src.news_aggregator.app import app as flask_app
-        logging.info("Successfully imported Flask app from src.news_aggregator.app")
+        logging.info("Successfully imported Flask app")
         return flask_app
     except ImportError as e:
         logging.error(f"Failed to import Flask app: {e}")
-        logging.error(f"Check if 'src.news_aggregator.app' exists and sys.path is correct: {sys.path}")
-        # Attempt to provide more specific debug info
+        # Try to determine what went wrong
         try:
             import importlib
-            spec = importlib.util.find_spec('src')
-            logging.info(f"Found 'src' module spec: {spec}")
-            spec_agg = importlib.util.find_spec('src.news_aggregator')
-            logging.info(f"Found 'src.news_aggregator' module spec: {spec_agg}")
-            spec_app = importlib.util.find_spec('src.news_aggregator.app')
-            logging.info(f"Found 'src.news_aggregator.app' module spec: {spec_app}")
+            spec = importlib.util.find_spec('src.news_aggregator')
+            logging.info(f"src.news_aggregator module spec: {spec}")
         except Exception as e2:
-            logging.error(f"Error while checking module specifications: {e2}")
-        raise  # Re-raise the original ImportError
+            logging.error(f"Error checking module spec: {e2}")
+        raise
 
-# Expose the application for WSGI servers like Gunicorn
+# Exposer l'application pour Gunicorn
 try:
     application = get_app()
-    logging.info("Flask application successfully retrieved for WSGI server.")
 except Exception as e:
-    logging.critical(f"CRITICAL: Failed to initialize Flask app for WSGI: {e}")
-    # Provide a minimal fallback WSGI app for graceful failure indication
+    logging.critical(f"Failed to get Flask app: {e}")
+    # Provide a basic WSGI app for fallback
     def application(environ, start_response):
         status = '500 Internal Server Error'
         headers = [('Content-type', 'text/plain; charset=utf-8')]
         start_response(status, headers)
-        return [b'Application failed to start. Please check the server logs for details.']
-    logging.info("Serving a fallback WSGI application due to initialization failure.")
+        return [b'Application failed to start. Check logs for details.']
 
-# For local testing (e.g., python wsgi.py)
+# Pour les tests locaux
 if __name__ == "__main__":
-    logging.info("Running WSGI script directly for local testing.")
     try:
-        # Ensure configuration is loaded if running directly
-        from dotenv import load_dotenv
-        load_dotenv()
-        # Check if the app object is the real Flask app or the fallback
-        if hasattr(application, 'run'):
-             # Use Flask's built-in server for development
-             # Note: For production, use Gunicorn: gunicorn wsgi:application
-            host = os.getenv("FLASK_HOST", "127.0.0.1") # Default to localhost for local run
-            port = int(os.getenv("FLASK_PORT", 5001)) # Use a different port maybe
-            debug = os.getenv("FLASK_DEBUG", "False").lower() == "true"
-            logging.info(f"Starting Flask development server on {host}:{port} (Debug: {debug})")
-            application.run(host=host, port=port, debug=debug)
-        else:
-            logging.warning("Cannot run the fallback application directly. Exiting.")
+        application.run()
     except Exception as e:
-        logging.critical(f"Error running Flask app locally: {e}")
+        logging.critical(f"Error running Flask app: {e}")

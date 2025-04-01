@@ -1,143 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Newsletter Monitor - Automated intelligence gathering service for topics of interest.">
-    <meta name="theme-color" content="#0056b3"> <!-- Theme color for browsers -->
+    <meta name="description" content="Newsletter Monitoring - Service de veille automatisée pour rester informé sur vos sujets d'intérêt">
+    <meta name="theme-color" content="#0056b3">
     <title>{% block title %}Newsletter Monitor{% endblock %}</title>
-
+    
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}"> <!-- Make sure favicon exists -->
-
-    <!-- Preconnect and Preload for performance -->
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" as="style">
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style">
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" as="script">
-    <link rel="preload" href="{{ url_for('static', filename='js/app.js') }}" as="script">
-
-
-    <!-- Bootstrap CSS (using a specific recent version) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-
-    <!-- Font Awesome Icons (using a specific recent version) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <!-- Google Fonts (Optional: consider local fonts or system fonts for privacy/performance) -->
-    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"> -->
-
-    <!-- Custom CSS -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
+    
+    <!-- Préchargement des ressources critiques -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" as="style">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS personnalisé -->
     <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
-
-    {% block extra_css %}{% endblock %} <!-- Block for page-specific CSS -->
+    
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <header class="header shadow-sm">
-        <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #0056b3, #004080);">
-            <div class="container">
-                <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
-                    <i class="fas fa-newspaper fa-lg me-2"></i>
-                    <span class="fw-bold">Newsletter Monitor</span>
-                </a>
-                 <!-- Basic Navbar Toggler for smaller screens if needed -->
-                 <!-- <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                 </button> -->
-                 <!-- <div class="collapse navbar-collapse" id="navbarNav"> -->
-                    <!-- Add nav items here if needed -->
-                 <!-- </div> -->
-                 <span class="navbar-text text-white-50 d-none d-lg-block">
-                    <i class="fas fa-robot me-1"></i> Automated Intelligence Gathering
-                 </span>
+    <header class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8 text-center text-md-start">
+                    <h1><i class="fas fa-newspaper me-2"></i>Newsletter Monitor</h1>
+                    <p class="lead mb-0">Veille intelligente sur vos sujets d'intérêt</p>
+                </div>
+                <div class="col-md-4 d-none d-md-block text-end">
+                    <i class="fas fa-robot fa-3x text-white-50"></i>
+                </div>
             </div>
-        </nav>
+        </div>
     </header>
-
-    <main class="container mt-4 mb-5">
-        <!-- Flash Messages -->
+    
+    <main class="container py-4">
+        <!-- Messages flash -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="row justify-content-center">
-                    <div class="col-md-10 col-lg-8">
+                <div class="row">
+                    <div class="col-12">
                         {% for category, message in messages %}
-                            {% set alert_class = 'alert-' + (category if category != 'error' else 'danger') %}
-                            <div class="alert {{ alert_class }} alert-dismissible fade show shadow-sm" role="alert">
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
                                 {% if category == 'success' %}
                                     <i class="fas fa-check-circle me-2"></i>
-                                {% elif category == 'danger' %}
-                                    <i class="fas fa-times-circle me-2"></i>
+                                {% elif category == 'error' or category == 'danger' %}
+                                    <i class="fas fa-exclamation-circle me-2"></i>
                                 {% elif category == 'warning' %}
                                     <i class="fas fa-exclamation-triangle me-2"></i>
                                 {% else %}
                                     <i class="fas fa-info-circle me-2"></i>
                                 {% endif %}
                                 {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
             {% endif %}
         {% endwith %}
-
-        <!-- Main Content Block -->
+        
+        <!-- Contenu principal -->
         {% block content %}{% endblock %}
     </main>
-
-    <footer class="footer mt-auto py-3 bg-light border-top">
+    
+    <footer class="footer">
         <div class="container">
             <div class="row">
-                <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
-                    <span class="text-muted">&copy; {{ now.year }} Newsletter Monitor App</span>
+                <div class="col-md-8 text-center text-md-start">
+                    <p><i class="fas fa-code me-2"></i>Newsletter Monitoring App &copy; 2025</p>
                 </div>
-                <div class="col-md-6 text-center text-md-end text-muted small">
-                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Powered by Tavily Search API">
-                        <i class="fas fa-search me-1 text-secondary"></i> Tavily
-                    </span>
-                    <span class="mx-2">|</span>
-                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Intelligence by Google Gemini">
-                        <i class="fas fa-brain me-1 text-secondary"></i> Gemini
-                    </span>
-                     <!-- Add other attributions if needed -->
+                <div class="col-md-4 text-center text-md-end">
+                    <p class="small text-muted">
+                        <span data-bs-toggle="tooltip" title="Propulsé par Tavily Search API">
+                            <i class="fas fa-search me-1"></i>Tavily
+                        </span>
+                        <span class="mx-2">|</span>
+                        <span data-bs-toggle="tooltip" title="Intelligence avec Google Gemini">
+                            <i class="fas fa-brain me-1"></i>Gemini
+                        </span>
+                    </p>
                 </div>
             </div>
         </div>
     </footer>
-
-    <!-- Bootstrap Bundle JS (includes Popper) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
-
-    <!-- Custom App JS -->
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
-
-    <!-- Block for page-specific JavaScript -->
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" defer></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+    
     {% block scripts %}{% endblock %}
-
-    <!-- Tooltip Initializer -->
+    
+    <!-- Initialisation des tooltips -->
     <script>
-        // Ensure tooltips are initialized after the DOM is ready
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
-            // Assign current year to elements with class 'current-year'
-             const now = new Date();
-             document.querySelectorAll('.current-year').forEach(el => el.textContent = now.getFullYear());
-
-             // Add current time to base context if needed by other scripts
-             window.appContext = {
-                 currentYear: now.getFullYear()
-             };
         });
     </script>
-     <!-- Add access to current year in JS context -->
-     <script>
-        const now = new Date();
-        document.querySelectorAll('.current-year').forEach(el => el.textContent = now.getFullYear());
-    </script>
-
 </body>
 </html>
