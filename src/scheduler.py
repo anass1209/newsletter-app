@@ -32,7 +32,7 @@ def _execute_task(graph, topic, user_email):
         user_email: Email to send the newsletter to
     """
     # Import here to avoid circular import issues
-    from .graph import GraphState
+    from src.news_aggregator.graph import GraphState
     
     try:
         logging.info(f"--- Starting scheduled execution for topic: '{topic}' at {datetime.now().strftime('%H:%M:%S')} ---")
@@ -67,7 +67,7 @@ def _execute_task(graph, topic, user_email):
         error_trace = traceback.format_exc()
         logging.error(f"Scheduler task execution error: {str(e)}")
         logging.error(f"Traceback: {error_trace}")
-
+        
 def _scheduler_loop(graph, topic, user_email, interval_hours):
     """
     Main scheduler loop function.
