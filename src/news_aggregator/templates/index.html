@@ -42,24 +42,16 @@
                         <div class="form-container">
                             <h3>Configure Newsletter</h3>
                             {% if not is_configured %}
-                                <form method="post" action="{{ url_for('index') }}">
-                                    <input type="hidden" name="setup" value="1">
-                                    <div class="mb-3">
-                                        <label for="tavily_api_key" class="form-label">Tavily API Key</label>
-                                        <input type="password" class="form-control" id="tavily_api_key" name="tavily_api_key" required>
-                                        <div class="form-text">Get a key from <a href="https://tavily.com" target="_blank">Tavily</a></div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="gemini_api_key" class="form-label">Gemini API Key</label>
-                                        <input type="password" class="form-control" id="gemini_api_key" name="gemini_api_key" required>
-                                        <div class="form-text">Get a key from <a href="https://aistudio.google.com" target="_blank">Google AI Studio</a></div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="user_email" class="form-label">Your Email Address</label>
-                                        <input type="email" class="form-control" id="user_email" name="user_email" required>
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">Save Configuration</button>
-                                </form>
+                            <form method="post" action="{{ url_for('index') }}">
+                                <!-- Un seul champ topic -->
+                                <div class="mb-3">
+                                    <label for="topic" class="form-label">Topic to Monitor</label>
+                                    <input type="text" class="form-control" id="topic" name="topic" required 
+                                           placeholder="e.g., Artificial Intelligence, Climate Change, Quantum Computing">
+                                    <div class="form-text">Enter a topic you want to receive updates about</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Start Monitoring</button>
+                            </form>
                             {% else %}
                                 <div class="alert alert-success">
                                     Configuration saved for: <strong>{{ user_email }}</strong>
