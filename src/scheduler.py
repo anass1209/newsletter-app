@@ -1,193 +1,220 @@
-# src/scheduler.py
-import schedule
+# src/news_aggregator/scheduler.py
+import threading
 import time
 import logging
-import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
-from langgraph.graph import StateGraph
-from news_aggregator.graph import GraphState
+import signal
+import traceback
 
-# Variables globales pour contrôler le scheduler
-stop_scheduler = threading.Event()
-scheduler_thread = None
-active_topic = None
-active_email = None
-last_execution_time = None
-next_execution_time = None
+# Logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(module)s] - %(message)s')
 
-def run_graph_job(compiled_graph: StateGraph, topic: str, user_email: str):
+# Global scheduler state
+_scheduler_thread = None
+_stop_event = threading.Event()
+_scheduler_state = {
+    "active": False,
+    "topic": None,
+    "user_email": None,
+    "last_execution": None,
+    "next_execution": None,
+    "interval_hours": 24  # Default to daily updates
+}
+
+def _execute_task(graph, topic, user_email):
     """
-    Fonction exécutée par le scheduler pour invoquer le graphe.
-    Génère et envoie une newsletter basée sur le sujet spécifié.
+    Execute the newsletter generation task.
     
     Args:
-        compiled_graph: Le graphe LangGraph compilé
-        topic: Le sujet de la newsletter
-        user_email: L'email du destinataire
+        graph: The compiled LangGraph
+        topic: Topic to search for
+        user_email: Email to send the newsletter to
     """
-    global active_topic, active_email, last_execution_time, next_execution_time
+    # Import here to avoid circular import issues
+    from .graph import GraphState
     
-    # Enregistrer le moment d'exécution avec fuseau horaire
-    paris_tz = pytz.timezone('Europe/Paris')
-    last_execution_time = datetime.now(paris_tz)
-    
-    # Calculer la prochaine exécution (dans exactement 1 heure)
-    next_execution_time = last_execution_time.replace(
-        minute=last_execution_time.minute, 
-        second=0, 
-        microsecond=0
-    )
-    next_execution_time = next_execution_time.replace(hour=next_execution_time.hour + 1)
-    
-    logging.info(f"--- Début de l'exécution planifiée pour le sujet: '{topic}' à {last_execution_time.strftime('%H:%M:%S')} ---")
     try:
-        # Initialisation de l'état avec des valeurs vides
-        initial_state = GraphState(
+        logging.info(f"--- Starting scheduled execution for topic: '{topic}' at {datetime.now().strftime('%H:%M:%S')} ---")
+        
+        # Create input state
+        paris_tz = pytz.timezone('Europe/Paris')
+        current_time = datetime.now(paris_tz).strftime("%d/%m/%Y at %H:%M")
+        
+        inputs = GraphState(
             topic=topic,
             tavily_results=[],
             structured_summary="",
             html_content="",
             error=None,
             user_email=user_email,
-            timestamp=last_execution_time.strftime("%d/%m/%Y à %H:%M")
+            timestamp=current_time
         )
         
-        # Invoquer le graphe avec l'état initial
-        result_state = compiled_graph.invoke(initial_state)
-
-        if result_state.get("error"):
-            logging.error(f"Erreur lors de l'exécution du graphe : {result_state['error']}")
+        # Record execution time
+        _scheduler_state["last_execution"] = datetime.now().isoformat()
+        
+        # Execute graph
+        result = graph.invoke(inputs)
+        
+        # Handle result
+        if result.get("error"):
+            logging.error(f"Error during graph execution: {result['error']}")
         else:
-            logging.info(f"--- Newsletter générée et envoyée pour : '{topic}' à {user_email} ---")
-            logging.info(f"--- Prochaine exécution prévue à : {next_execution_time.strftime('%H:%M')} ---")
+            logging.info("Newsletter generation and delivery completed successfully")
             
-            # Mettre à jour les variables globales pour suivre l'état actif
-            active_topic = topic
-            active_email = user_email
-
     except Exception as e:
-        logging.exception(f"Erreur majeure lors de l'exécution du job pour '{topic}': {e}")
+        error_trace = traceback.format_exc()
+        logging.error(f"Scheduler task execution error: {str(e)}")
+        logging.error(f"Traceback: {error_trace}")
 
-
-def start_scheduling(compiled_graph: StateGraph, topic: str, user_email: str, interval_hours: float = 1.0):
+def _scheduler_loop(graph, topic, user_email, interval_hours):
     """
-    Configure et démarre le scheduling dans un thread séparé.
+    Main scheduler loop function.
     
     Args:
-        compiled_graph: Le graphe LangGraph compilé
-        topic: Le sujet de la newsletter
-        user_email: L'email du destinataire
-        interval_hours: Intervalle en heures entre chaque envoi (défaut: 1h)
+        graph: The compiled LangGraph
+        topic: Topic to search for
+        user_email: Email to send the newsletter to 
+        interval_hours: Hours between executions
     """
-    global scheduler_thread, active_topic, active_email, last_execution_time, next_execution_time
-
-    # Arrêter tout scheduling précédent
-    stop_scheduling()
+    logging.info(f"Starting scheduler loop...")
     
-    if not compiled_graph:
-        logging.error("Impossible de démarrer le scheduler: graphe non compilé.")
-        return False
+    # Execute immediately on start
+    _execute_task(graph, topic, user_email)
+    
+    # Calculate next execution time
+    next_run = datetime.now() + timedelta(hours=interval_hours)
+    _scheduler_state["next_execution"] = next_run.isoformat()
+    logging.info(f"Next execution scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    while not _stop_event.is_set():
+        # Check if it's time to run
+        now = datetime.now()
+        if now >= next_run:
+            # Execute the task
+            _execute_task(graph, topic, user_email)
+            
+            # Calculate next execution time
+            next_run = now + timedelta(hours=interval_hours)
+            _scheduler_state["next_execution"] = next_run.isoformat()
+            logging.info(f"Next execution scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
         
-    logging.info(f"Configuration du scheduler pour exécuter toutes les {interval_hours} heure(s).")
-
-    # Mettre à jour les variables globales
-    active_topic = topic
-    active_email = user_email
-
-    # Exécution immédiate pour la première fois
-    run_graph_job(compiled_graph, topic, user_email)
+        # Sleep for a while before checking again (60 seconds)
+        for _ in range(60):
+            if _stop_event.is_set():
+                break
+            time.sleep(1)
     
-    # Planification des exécutions suivantes
-    # Convertir interval_hours en secondes pour schedule
-    interval_seconds = int(interval_hours * 3600)
-    schedule.every(interval_seconds).seconds.do(
-        run_graph_job,
-        compiled_graph=compiled_graph,
-        topic=topic,
-        user_email=user_email
+    logging.info("Scheduler loop stopped.")
+
+def start_scheduling(graph, topic, user_email, interval_hours=24):
+    """
+    Start the scheduling process.
+    
+    Args:
+        graph: The compiled LangGraph
+        topic: Topic to search for
+        user_email: Email to send the newsletter to
+        interval_hours: Hours between executions (default: 24 for daily)
+    """
+    global _scheduler_thread, _stop_event, _scheduler_state
+    
+    # Stop any existing scheduler
+    stop_scheduling()
+    logging.info(f"No active scheduler to stop.")
+    
+    # Configure new scheduler
+    logging.info(f"Configuring scheduler to run every {interval_hours} hour(s).")
+    _stop_event.clear()
+    _scheduler_state["active"] = True
+    _scheduler_state["topic"] = topic
+    _scheduler_state["user_email"] = user_email
+    _scheduler_state["interval_hours"] = interval_hours
+    
+    # Start the scheduler thread
+    _scheduler_thread = threading.Thread(
+        target=_scheduler_loop,
+        args=(graph, topic, user_email, interval_hours),
+        daemon=True  # This makes sure the thread doesn't block app shutdown
     )
-
-    # Démarrer la boucle du scheduler dans un thread séparé
-    def scheduler_loop():
-        logging.info("Démarrage de la boucle du scheduler...")
-        while not stop_scheduler.is_set():
-            schedule.run_pending()
-            # Vérifier toutes les 10 secondes si une tâche est prête
-            time.sleep(10)
-        logging.info("Boucle du scheduler arrêtée.")
-        schedule.clear()  # Nettoyer les tâches planifiées
-
-    stop_scheduler.clear()  # Réinitialiser l'event d'arrêt
-    scheduler_thread = threading.Thread(target=scheduler_loop, daemon=True)
-    scheduler_thread.start()
-    logging.info(f"Thread du scheduler démarré pour le sujet '{topic}'.")
+    _scheduler_thread.start()
+    
+    logging.info(f"Scheduler thread started for topic '{topic}'.")
     return True
 
-
 def stop_scheduling():
-    """Arrête la boucle du scheduler et nettoie les ressources."""
-    global scheduler_thread, active_topic, active_email, last_execution_time, next_execution_time
+    """
+    Stop the current scheduling process.
     
-    # Vérifier si un thread est actif
-    if scheduler_thread is not None and scheduler_thread.is_alive():
-        logging.info(f"Arrêt du scheduler pour le sujet '{active_topic}'.")
-        stop_scheduler.set()
-        
-        try:
-            scheduler_thread.join(timeout=5)  # Attendre 5 secondes max
-            
-            # Vérifier si le thread s'est bien arrêté
-            if scheduler_thread.is_alive():
-                logging.warning("Le thread du scheduler n'a pas pu être arrêté proprement.")
-        except Exception as e:
-            logging.error(f"Erreur lors de l'arrêt du thread: {e}")
-        
-        # Nettoyer les jobs planifiés
-        schedule.clear()
-        
-        # Réinitialiser les variables globales
-        scheduler_thread = None
-        active_topic = None
-        active_email = None
-        last_execution_time = None
-        next_execution_time = None
-        
-        logging.info("Scheduler arrêté et nettoyé.")
-        return True
-    else:
-        logging.info("Aucun scheduler actif à arrêter.")
-        # Assurez-vous que les variables globales sont bien nettoyées
-        scheduler_thread = None
-        active_topic = None
-        active_email = None
-        last_execution_time = None
-        next_execution_time = None
-        schedule.clear()
+    Returns:
+        bool: True if a scheduler was stopped, False otherwise
+    """
+    global _scheduler_thread, _stop_event, _scheduler_state
+    
+    if not _scheduler_state["active"]:
+        logging.info("No active scheduler to stop.")
         return False
-
+    
+    # Signal the scheduler to stop
+    logging.info(f"Stopping scheduler for topic '{_scheduler_state['topic']}'.")
+    _stop_event.set()
+    
+    # Wait for scheduler thread to finish (with timeout)
+    if _scheduler_thread and _scheduler_thread.is_alive():
+        try:
+            _scheduler_thread.join(timeout=5.0)
+            logging.info("Scheduler loop stopped.")
+        except Exception as e:
+            logging.warning(f"Error waiting for scheduler thread: {e}")
+    
+    # Clean up
+    _scheduler_thread = None
+    _scheduler_state["active"] = False
+    _scheduler_state["topic"] = None
+    _scheduler_state["user_email"] = None
+    _scheduler_state["next_execution"] = None
+    
+    logging.info("Scheduler stopped and cleaned up.")
+    return True
 
 def get_active_state():
     """
-    Récupère l'état actif du scheduler.
+    Get the current scheduler state.
     
     Returns:
-        dict: Informations sur l'état actif du scheduler
+        dict: Current scheduler state
     """
-    is_active = scheduler_thread is not None and scheduler_thread.is_alive()
+    return _scheduler_state.copy()
+
+# Register signal handlers for clean shutdown
+def _handle_signal(signum, frame):
+    logging.info(f"Received signal {signum}, stopping scheduler...")
+    stop_scheduling()
+
+# Register for common termination signals
+signal.signal(signal.SIGINT, _handle_signal)
+signal.signal(signal.SIGTERM, _handle_signal)
+
+# For testing
+if __name__ == "__main__":
+    # Simple test
+    from datetime import datetime
     
-    result = {
-        "active": is_active,
-        "topic": active_topic,
-        "email": active_email,
-        "last_execution": None,
-        "next_execution": None
-    }
+    # Mock graph
+    class MockGraph:
+        def invoke(self, inputs):
+            print(f"Mock graph invoked with topic: {inputs['topic']}")
+            return {"error": None}
     
-    if last_execution_time:
-        result["last_execution"] = last_execution_time.isoformat()
+    mock_graph = MockGraph()
     
-    if next_execution_time:
-        result["next_execution"] = next_execution_time.isoformat()
+    print("Starting test scheduler (5-second interval)...")
+    start_scheduling(mock_graph, "Test Topic", "test@example.com", interval_hours=1/720)  # 5 seconds
     
-    return result
+    try:
+        # Run for 15 seconds
+        time.sleep(15)
+    finally:
+        print("Stopping test scheduler...")
+        stop_scheduling()

@@ -41,8 +41,14 @@ def load_credentials_from_env():
     SENDER_EMAIL = get_env_variable("SENDER_EMAIL", "default@example.com")
     SENDER_APP_PASSWORD = get_env_variable("SENDER_APP_PASSWORD")
     
+    # Log variables existence (but not their values for security)
+    logging.info(f"Tavily API key loaded from env: {bool(TAVILY_API_KEY)}")
+    logging.info(f"Gemini API key loaded from env: {bool(GEMINI_API_KEY)}")
+    logging.info(f"Sender email loaded from env: {bool(SENDER_EMAIL)}")
+    logging.info(f"Sender password loaded from env: {bool(SENDER_APP_PASSWORD)}")
+    
     if all([TAVILY_API_KEY, GEMINI_API_KEY, SENDER_EMAIL, SENDER_APP_PASSWORD]):
-        logging.info("Credentials loaded from environment variables.")
+        logging.info("All credentials loaded from environment variables.")
         return True
     else:
         missing = [var for var, val in {
@@ -58,6 +64,11 @@ def set_credentials(tavily_key: str, gemini_key: str, user_email: str, sender_em
     """Set application credentials."""
     global TAVILY_API_KEY, GEMINI_API_KEY, USER_EMAIL, SENDER_EMAIL, SENDER_APP_PASSWORD
     
+    # Validate inputs
+    if not tavily_key or not gemini_key or not user_email:
+        logging.error("Missing required credentials during set_credentials")
+        return False
+    
     TAVILY_API_KEY = tavily_key
     GEMINI_API_KEY = gemini_key
     USER_EMAIL = user_email
@@ -66,10 +77,18 @@ def set_credentials(tavily_key: str, gemini_key: str, user_email: str, sender_em
         SENDER_EMAIL = sender_email
     if sender_password:
         SENDER_APP_PASSWORD = sender_password
-        
-    logging.info("Credentials set via UI or API.")
+    
+    # Log result (but not actual values for security)    
+    logging.info(f"Credentials set via UI or API. Tavily: {bool(TAVILY_API_KEY)}, Gemini: {bool(GEMINI_API_KEY)}, User email: {USER_EMAIL}")
     
     if not SENDER_EMAIL or not SENDER_APP_PASSWORD:
         logging.warning("Sender email or password missing.")
         return False
-    return True
+    
+    # Test if values are properly set
+    if TAVILY_API_KEY and GEMINI_API_KEY and USER_EMAIL and SENDER_EMAIL and SENDER_APP_PASSWORD:
+        logging.info("All credentials set successfully")
+        return True
+    else:
+        logging.error("Failed to set all credentials properly")
+        return False
