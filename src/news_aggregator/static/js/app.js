@@ -1,365 +1,375 @@
-// src/news_aggregator/static/js/app.js
-
 /**
- * Newsletter App JavaScript
- * Handles UI interactions, automatic updates, and countdown timers
+ * Newsletter Monitoring Application
+ * Professional UX Enhancement
+ * 
+ * Gère les interactions utilisateur, la validation des formulaires,
+ * les animations et les mises à jour automatiques des statuts.
  */
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialization
-    initAlertAutoClose();
-    initFormValidation();
-    initMonitoringDashboard();
-    initPasswordToggle();
-});
+"use strict";
 
-/**
- * Close success and info alerts automatically after a delay
- */
-function initAlertAutoClose() {
-    const autoCloseDelay = 5000; // 5 seconds
+// Namespace pour éviter les conflits
+const NewsletterApp = {
+    // Configuration
+    config: {
+        alertAutoCloseDelay: 5000,
+        statusRefreshInterval: 30000,
+        animationDuration: 300,
+        progressBarUpdateInterval: 1000
+    },
     
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert.alert-info, .alert.alert-success:not(.fixed)');
-        alerts.forEach(function(alert) {
-            fadeOutElement(alert);
-        });
-    }, autoCloseDelay);
-}
-
-/**
- * Fade out an element and remove it from DOM when complete
- * @param {HTMLElement} element - The element to fade out
- */
-function fadeOutElement(element) {
-    let opacity = 1;
-    const timer = setInterval(function() {
-        if (opacity <= 0.1) {
-            clearInterval(timer);
-            element.style.display = 'none';
-            
-            // Optional: remove from DOM after animation
-            if (element.parentNode) {
-                element.parentNode.removeChild(element);
-            }
-        }
-        element.style.opacity = opacity;
-        opacity -= opacity * 0.1;
-    }, 20);
-}
-
-/**
- * Initialize form validation
- */
-function initFormValidation() {
-    const forms = document.querySelectorAll('form.needs-validation');
+    // Initialisation de l'application
+    init: function() {
+        this.setupEventListeners();
+        this.setupAlerts();
+        this.setupCountdown();
+        this.setupFormValidation();
+        this.setupStatusUpdates();
+    },
     
-    forms.forEach(form => {
-        form.addEventListener('submit', function(event) {
-            if (!validateForm(form)) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            
-            form.classList.add('was-validated');
-        });
-        
-        // Add input event listeners for real-time validation feedback
-        const inputs = form.querySelectorAll('input[required]');
-        inputs.forEach(input => {
-            input.addEventListener('input', function() {
-                validateInput(input);
+    // Mise en place des écouteurs d'événements
+    setupEventListeners: function() {
+        // Gestionnaires pour les toggles de formulaires
+        document.querySelectorAll('[data-toggle]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = btn.getAttribute('data-toggle');
+                if (target) {
+                    this.toggleElement(document.getElementById(target));
+                }
             });
         });
-    });
-}
-
-/**
- * Validate a specific form input
- * @param {HTMLInputElement} input - The input element to validate
- * @returns {boolean} - Whether the input is valid
- */
-function validateInput(input) {
-    const isValid = input.checkValidity();
-    
-    if (isValid) {
-        input.classList.remove('is-invalid');
-        input.classList.add('is-valid');
-    } else {
-        input.classList.remove('is-valid');
-        input.classList.add('is-invalid');
-    }
-    
-    return isValid;
-}
-
-/**
- * Validate an entire form
- * @param {HTMLFormElement} form - The form to validate
- * @returns {boolean} - Whether the form is valid
- */
-function validateForm(form) {
-    let isValid = true;
-    
-    // Check each required input
-    const inputs = form.querySelectorAll('input[required]');
-    inputs.forEach(input => {
-        if (!validateInput(input)) {
-            isValid = false;
-        }
-    });
-    
-    return isValid;
-}
-
-/**
- * Initialize password toggle for API key fields
- */
-function initPasswordToggle() {
-    // Function is implemented inline in the HTML for simplicity
-    // See the togglePassword function in the index.html script block
-}
-
-/**
- * Initialize all monitoring dashboard features
- */
-function initMonitoringDashboard() {
-    const monitoringActive = document.querySelector('.status-container');
-    if (!monitoringActive) return;
-    
-    // Initialize components
-    initCountdownTimer();
-    initStatusRefresh();
-    initInfoCardAnimations();
-    initActivityLogInteractions();
-    
-    // Display welcome toast
-    showWelcomeToast();
-}
-
-/**
- * Initialize enhanced countdown timer with visual feedback
- */
-function initCountdownTimer() {
-    const nextUpdateElement = document.getElementById('nextUpdate');
-    if (!nextUpdateElement) return;
-    
-    // Get next update time from data attribute
-    let nextUpdateTime;
-    
-    if (nextUpdateElement.dataset.nextExecution) {
-        nextUpdateTime = new Date(nextUpdateElement.dataset.nextExecution);
-    } else {
-        // Default to 1 hour from now if not specified
-        const now = new Date();
-        nextUpdateTime = new Date(now.getTime() + 60 * 60 * 1000);
-    }
-    
-    function updateCountdown() {
-        const now = new Date();
-        const timeDiff = nextUpdateTime - now;
         
-        if (timeDiff <= 0) {
-            nextUpdateElement.innerHTML = '<span class="badge bg-warning">Coming soon</span>';
-            
-            // Refresh status
-            setTimeout(() => { 
-                fetchStatusUpdate(); 
-            }, 15000);
-            return;
-        }
-        
-        // Calculate minutes and seconds
-        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-        
-        // Calculate percentage of hour completed for progress indicator
-        const hourInMs = 60 * 60 * 1000;
-        const percentComplete = 100 - ((timeDiff / hourInMs) * 100);
-        
-        // Update with formatted time and progress bar
-        nextUpdateElement.innerHTML = `
-            <span class="time-remaining">${minutes} min ${seconds} sec</span>
-            <div class="progress mt-2" style="height: 5px;">
-                <div class="progress-bar" role="progressbar" style="width: ${percentComplete}%"></div>
-            </div>
-        `;
-        
-        // Update every second
-        setTimeout(updateCountdown, 1000);
-    }
-    
-    // Start countdown
-    updateCountdown();
-}
-
-/**
- * Initialize automatic status refresh
- */
-function initStatusRefresh() {
-    // Refresh status every 30 seconds
-    setInterval(fetchStatusUpdate, 30000);
-}
-
-/**
- * Fetch updated status from the server
- */
-function fetchStatusUpdate() {
-    fetch('/api/status')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
+        // Gestionnaires pour les boutons de visibilité des mots de passe
+        document.querySelectorAll('.btn-outline-secondary').forEach(btn => {
+            if (btn.onclick && btn.onclick.toString().includes('togglePassword')) {
+                // Remplacement par notre fonction
+                btn.onclick = null;
+                btn.addEventListener('click', (e) => {
+                    const inputId = btn.closest('.input-group').querySelector('input').id;
+                    this.togglePasswordVisibility(inputId);
+                });
             }
-            return response.json();
-        })
-        .then(data => {
-            updateDashboardWithNewData(data);
-        })
-        .catch(error => {
-            console.error('Error fetching status update:', error);
         });
-}
-
-/**
- * Update dashboard with new data from server
- */
-function updateDashboardWithNewData(data) {
-    // Update time remaining display if available
-    const nextUpdateElement = document.getElementById('nextUpdate');
-    if (nextUpdateElement && data.time_remaining) {
-        // Leave the update to the countdown timer function
-        nextUpdateElement.dataset.nextExecution = data.next_execution_iso || '';
-    }
+    },
     
-    // If monitoring is no longer active, reload the page
-    if (document.querySelector('.status-container') && !data.active) {
-        window.location.reload();
-    }
-    
-    // Refresh the activity log if there's new activity
-    if (data.last_activity_time && data.last_activity_time !== lastActivityTime) {
-        lastActivityTime = data.last_activity_time;
-        updateActivityLog(data.activities || []);
-    }
-}
-
-// Global variable to track last activity time
-let lastActivityTime = '';
-
-/**
- * Update activity log with new activities
- */
-function updateActivityLog(activities) {
-    const timelineContainer = document.querySelector('.timeline');
-    if (!timelineContainer || !activities.length) return;
-    
-    // Create HTML for new activities
-    const newActivitiesHTML = activities.map(activity => `
-        <div class="timeline-item">
-            <div class="timeline-dot"></div>
-            <div class="timeline-content">
-                <p class="timeline-date">${activity.time}</p>
-                <p class="timeline-text">${activity.message}</p>
-            </div>
-        </div>
-    `).join('');
-    
-    // Add new activities with animation
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = newActivitiesHTML;
-    
-    // Add each new activity with animation
-    while (tempDiv.firstChild) {
-        const newItem = tempDiv.firstChild;
-        newItem.style.opacity = '0';
-        newItem.style.transform = 'translateY(-10px)';
-        timelineContainer.insertBefore(newItem, timelineContainer.firstChild);
-        
-        // Trigger animation
+    // Gestion des alertes
+    setupAlerts: function() {
         setTimeout(() => {
-            newItem.style.transition = 'opacity 0.5s, transform 0.5s';
-            newItem.style.opacity = '1';
-            newItem.style.transform = 'translateY(0)';
-        }, 10);
-    }
-}
-
-/**
- * Initialize info card animations
- */
-function initInfoCardAnimations() {
-    const infoCards = document.querySelectorAll('.info-card');
+            document.querySelectorAll('.alert:not(.fixed)').forEach(alert => {
+                this.fadeOutElement(alert);
+            });
+        }, this.config.alertAutoCloseDelay);
+        
+        // Ajouter des gestionnaires pour les boutons de fermeture des alertes
+        document.querySelectorAll('.alert .btn-close').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.fadeOutElement(e.target.closest('.alert'));
+            });
+        });
+    },
     
-    infoCards.forEach((card, index) => {
-        // Staggered entrance animation
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
+    // Animer la disparition d'un élément
+    fadeOutElement: function(element) {
+        if (!element) return;
+        
+        element.style.transition = `opacity ${this.config.animationDuration}ms ease-out`;
+        element.style.opacity = '0';
         
         setTimeout(() => {
-            card.style.transition = 'opacity 0.5s, transform 0.5s';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, 100 * index);
-    });
-}
-
-/**
- * Initialize activity log interactions
- */
-function initActivityLogInteractions() {
-    const timelineItems = document.querySelectorAll('.timeline-item');
+            if (element.parentNode) {
+                element.style.display = 'none';
+                // Optionnel: supprimer complètement du DOM
+                // element.parentNode.removeChild(element);
+            }
+        }, this.config.animationDuration);
+    },
     
-    timelineItems.forEach(item => {
-        item.addEventListener('mouseenter', () => {
-            item.querySelector('.timeline-dot').style.transform = 'scale(1.2)';
-            item.querySelector('.timeline-dot').style.transition = 'transform 0.3s';
+    // Basculer la visibilité d'un élément
+    toggleElement: function(element) {
+        if (!element) return;
+        
+        if (element.classList.contains('d-none')) {
+            // Afficher l'élément
+            element.classList.remove('d-none');
+            element.style.opacity = '0';
+            
+            // Déclencher le reflow pour que la transition fonctionne
+            element.offsetHeight;
+            
+            element.style.transition = `opacity ${this.config.animationDuration}ms ease-in`;
+            element.style.opacity = '1';
+        } else {
+            // Masquer l'élément
+            element.style.transition = `opacity ${this.config.animationDuration}ms ease-out`;
+            element.style.opacity = '0';
+            
+            setTimeout(() => {
+                element.classList.add('d-none');
+            }, this.config.animationDuration);
+        }
+    },
+    
+    // Basculer la visibilité d'un mot de passe
+    togglePasswordVisibility: function(inputId) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        
+        const icon = input.parentNode.querySelector('.fa-eye, .fa-eye-slash');
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        } else {
+            input.type = 'password';
+            if (icon) {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    },
+    
+    // Configurer le compte à rebours pour la prochaine mise à jour
+    setupCountdown: function() {
+        const countdownElement = document.getElementById('nextUpdate');
+        if (!countdownElement) return;
+        
+        let nextUpdateTime;
+        
+        // Obtenir le temps de la prochaine mise à jour
+        if (countdownElement.dataset.nextExecution) {
+            nextUpdateTime = new Date(countdownElement.dataset.nextExecution);
+        } else {
+            // Par défaut, dans une heure
+            const now = new Date();
+            nextUpdateTime = new Date(now.getTime() + 60 * 60 * 1000);
+        }
+        
+        const updateCountdown = () => {
+            const now = new Date();
+            const remainingMs = nextUpdateTime - now;
+            
+            if (remainingMs <= 0) {
+                countdownElement.innerHTML = '<span class="badge bg-warning">Très bientôt</span>';
+                
+                // Vérifier l'état après un délai
+                setTimeout(() => {
+                    this.fetchStatusUpdate();
+                }, 30000);
+                return;
+            }
+            
+            // Calculer les minutes et secondes restantes
+            const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+            
+            // Mettre à jour l'affichage
+            countdownElement.innerHTML = `<span class="time-remaining">${minutes} min ${seconds} sec</span>`;
+            
+            // Mettre à jour toutes les secondes
+            setTimeout(updateCountdown, 1000);
+        };
+        
+        // Démarrer le compte à rebours
+        updateCountdown();
+    },
+    
+    // Configurer la validation des formulaires
+    setupFormValidation: function() {
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        forms.forEach(form => {
+            // Validation à la soumission
+            form.addEventListener('submit', event => {
+                if (!this.validateForm(form)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            });
+            
+            // Validation en temps réel
+            const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+            inputs.forEach(input => {
+                // Valider lors de la perte de focus
+                input.addEventListener('blur', () => {
+                    this.validateInput(input);
+                });
+                
+                // Réinitialiser les erreurs lors de la saisie
+                input.addEventListener('input', () => {
+                    input.classList.remove('is-invalid');
+                    
+                    // Supprimer les messages d'erreur personnalisés
+                    const feedbackEl = input.parentNode.querySelector('.validation-message.invalid');
+                    if (feedbackEl) {
+                        feedbackEl.remove();
+                    }
+                });
+            });
+        });
+    },
+    
+    // Valider un champ de formulaire
+    validateInput: function(input) {
+        let isValid = input.checkValidity();
+        
+        // Validations personnalisées supplémentaires
+        if (input.type === 'email' && input.value) {
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            isValid = emailPattern.test(input.value);
+            
+            if (!isValid) {
+                this.showValidationError(input, "Veuillez saisir une adresse email valide");
+                return false;
+            }
+        }
+        
+        if (input.id === 'tavily_api_key' && input.value) {
+            if (input.value.length < 20) {
+                this.showValidationError(input, "La clé API semble trop courte");
+                return false;
+            }
+        }
+        
+        if (input.id === 'gemini_api_key' && input.value) {
+            if (input.value.length < 20) {
+                this.showValidationError(input, "La clé API semble trop courte");
+                return false;
+            }
+        }
+        
+        // Appliquer les classes CSS appropriées
+        if (isValid) {
+            input.classList.add('is-valid');
+            input.classList.remove('is-invalid');
+        } else {
+            input.classList.add('is-invalid');
+            input.classList.remove('is-valid');
+            
+            // Afficher un message d'erreur générique si aucun n'a été défini
+            if (!input.parentNode.querySelector('.validation-message.invalid')) {
+                this.showValidationError(input, "Ce champ est requis");
+            }
+        }
+        
+        return isValid;
+    },
+    
+    // Afficher un message d'erreur de validation personnalisé
+    showValidationError: function(input, message) {
+        // Supprimer tout message d'erreur existant
+        const existingMsg = input.parentNode.querySelector('.validation-message.invalid');
+        if (existingMsg) {
+            existingMsg.remove();
+        }
+        
+        // Créer un nouvel élément pour le message d'erreur
+        const feedbackEl = document.createElement('div');
+        feedbackEl.className = 'validation-message invalid';
+        feedbackEl.textContent = message;
+        
+        // Ajouter après l'input ou à la fin du parent
+        const formText = input.parentNode.querySelector('.form-text');
+        if (formText) {
+            input.parentNode.insertBefore(feedbackEl, formText);
+        } else {
+            input.parentNode.appendChild(feedbackEl);
+        }
+        
+        input.classList.add('is-invalid');
+        input.classList.remove('is-valid');
+    },
+    
+    // Valider un formulaire entier
+    validateForm: function(form) {
+        let isValid = true;
+        
+        // Valider tous les champs requis
+        const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+        inputs.forEach(input => {
+            if (!this.validateInput(input)) {
+                isValid = false;
+            }
         });
         
-        item.addEventListener('mouseleave', () => {
-            item.querySelector('.timeline-dot').style.transform = 'scale(1)';
-        });
-    });
-}
-
-/**
- * Show welcome toast message
- */
-function showWelcomeToast() {
-    // Create toast container if it doesn't exist
-    let toastContainer = document.querySelector('.toast-container');
+        return isValid;
+    },
     
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-        document.body.appendChild(toastContainer);
+    // Configurer les mises à jour automatiques du statut
+    setupStatusUpdates: function() {
+        if (!document.querySelector('.status-container')) return;
+        
+        // Mettre à jour le statut périodiquement
+        setInterval(() => {
+            this.fetchStatusUpdate();
+        }, this.config.statusRefreshInterval);
+    },
+    
+    // Récupérer les mises à jour de statut depuis le serveur
+    fetchStatusUpdate: function() {
+        // Afficher un indicateur de mise à jour
+        const statusContainer = document.querySelector('.status-container');
+        if (statusContainer) {
+            statusContainer.classList.add('status-updating');
+        }
+        
+        fetch('/api/status')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur réseau lors de la récupération du statut');
+                }
+                return response.json();
+            })
+            .then(data => {
+                this.updateStatusDisplay(data);
+                // Supprimer l'indicateur de mise à jour
+                if (statusContainer) {
+                    statusContainer.classList.remove('status-updating');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur de récupération du statut:', error);
+                // Supprimer l'indicateur de mise à jour en cas d'erreur également
+                if (statusContainer) {
+                    statusContainer.classList.remove('status-updating');
+                }
+            });
+    },
+    
+    // Mettre à jour l'affichage du statut avec les nouvelles données
+    updateStatusDisplay: function(data) {
+        // Mettre à jour le temps restant s'il est disponible
+        const nextUpdateElement = document.getElementById('nextUpdate');
+        if (nextUpdateElement && data.time_remaining) {
+            nextUpdateElement.innerHTML = `<span class="time-remaining">${data.time_remaining}</span>`;
+        }
+        
+        // Si le monitoring n'est plus actif, recharger la page
+        const statusContainer = document.querySelector('.status-container');
+        if (statusContainer && !data.active) {
+            // Afficher un message de chargement
+            statusContainer.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Rechargement de la page...</p>
+                </div>
+            `;
+            
+            // Recharger la page après un court délai
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
     }
-    
-    // Create toast HTML
-    const topic = document.querySelector('.lead strong')?.textContent || 'your chosen topic';
-    const toastHTML = `
-        <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <i class="fas fa-satellite-dish me-2 text-primary"></i>
-                <strong class="me-auto">Newsletter Monitoring</strong>
-                <small>Just now</small>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                <i class="fas fa-check-circle text-success me-2"></i>
-                Monitoring active for "${topic}". You'll receive hourly updates via email.
-            </div>
-        </div>
-    `;
-    
-    // Add toast to container
-    toastContainer.innerHTML += toastHTML;
-    
-    // Initialize and show toast
-    const toastElement = toastContainer.querySelector('.toast:last-child');
-    const toast = new bootstrap.Toast(toastElement, {
-        autohide: true,
-        delay: 5000
-    });
-    
-    toast.show();
-}
+};
+
+// Initialiser l'application au chargement du document
+document.addEventListener('DOMContentLoaded', function() {
+    NewsletterApp.init();
+});

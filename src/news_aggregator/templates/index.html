@@ -1,213 +1,201 @@
 {% extends "base.html" %}
 
-{% block title %}Newsletter Monitor - Home{% endblock %}
+{% block title %}Newsletter Monitor - Professional{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10">
+    <div class="col-lg-10">
         {% if not app_ready %}
             <div class="alert alert-warning" role="alert">
-                <h4 class="alert-heading"><i class="fas fa-cog fa-spin me-2"></i>Application Initializing</h4>
-                <p>The application is still initializing services. Please try again in a few moments.</p>
-                <hr>
-                <p class="mb-0">If this message persists, there might be an issue with API connections.</p>
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-cog fa-spin fa-2x"></i>
+                    </div>
+                    <div>
+                        <h4 class="alert-heading mb-1">Application Initializing</h4>
+                        <p class="mb-0">The services are starting up. This should only take a moment.</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                </div>
             </div>
         {% else %}
             {% if is_configured and active_topic %}
-                <!-- DÉBUT SECTION ACTIVE MONITORING -->
                 <div class="status-container">
-                    <!-- Header Section -->
-                    <div class="row mb-4">
-                        <div class="col-md-8">
-                            <div class="d-flex align-items-center">
-                                <div class="status-icon-container me-3">
-                                    <i class="fas fa-satellite-dish pulse-animation"></i>
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="status-indicator me-3">
+                                    <span class="badge bg-success p-2"><i class="fas fa-satellite-dish"></i></span>
                                 </div>
-                                <div>
-                                    <h3 class="mb-1">Active Monitoring</h3>
-                                    <p class="lead mb-0">Tracking updates on <strong>{{ active_topic }}</strong></p>
-                                </div>
+                                <h3 class="mb-0">Active Monitoring</h3>
                             </div>
-                        </div>
-                        <div class="col-md-4 text-md-end">
-                            <span class="badge bg-success mb-2"><i class="fas fa-check-circle me-1"></i> Active</span>
-                            <p class="small text-muted mb-0">Started on {{ last_execution.split(' ')[0] if last_execution else 'today' }}</p>
-                        </div>
-                    </div>
-                    
-                    <!-- Information Cards -->
-                    <div class="row mb-4">
-                        <!-- Delivery Info -->
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <div class="info-card">
-                                <div class="info-card-icon">
-                                    <i class="fas fa-envelope"></i>
-                                </div>
-                                <div class="info-card-content">
-                                    <h5>Delivery</h5>
-                                    <p>Updates sent to:</p>
-                                    <p class="text-truncate"><strong>{{ user_email }}</strong></p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Last Update -->
-                        <div class="col-md-4 mb-3 mb-md-0">
-                            <div class="info-card">
-                                <div class="info-card-icon">
-                                    <i class="fas fa-history"></i>
-                                </div>
-                                <div class="info-card-content">
-                                    <h5>Last Update</h5>
-                                    <p>Sent at:</p>
-                                    <p><strong>{{ last_execution if last_execution else 'Processing...' }}</strong></p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Next Update -->
-                        <div class="col-md-4">
-                            <div class="info-card">
-                                <div class="info-card-icon">
-                                    <i class="fas fa-clock"></i>
-                                </div>
-                                <div class="info-card-content">
-                                    <h5>Next Update</h5>
-                                    <p>Expected at:</p>
-                                    <p>
-                                        <strong>{{ next_execution if next_execution else 'Calculating...' }}</strong>
-                                        {% if time_remaining %}
-                                        <span id="nextUpdate" data-next-execution="{{ next_execution }}" class="countdown-timer">
-                                            <span class="time-remaining">{{ time_remaining }}</span>
-                                        </span>
-                                        {% endif %}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Topic Details -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="topic-detail-card">
-                                <h5><i class="fas fa-search me-2"></i>Topic Details</h5>
-                                <div class="row">
-                                    <div class="col-md-8">
-                                        <p class="mb-2">Your newsletter includes the latest on:</p>
-                                        <div class="topic-keywords">
-                                            {% for keyword in active_topic.split(',') %}
-                                                <span class="topic-keyword">{{ keyword.strip() }}</span>
-                                            {% else %}
-                                                <span class="topic-keyword">{{ active_topic }}</span>
-                                            {% endfor %}
+                            
+                            <div class="card mb-3">
+                                <div class="card-body py-3">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center">
+                                                <div class="icon-container me-2">
+                                                    <i class="fas fa-search text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <span class="text-muted">Topic</span>
+                                                    <h5 class="mb-0">{{ active_topic }}</h5>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                                        <p class="mb-1 small">Want to modify your topic?</p>
-                                        <form action="{{ url_for('stop_newsletter') }}" method="post">
-                                            <button type="submit" class="btn btn-outline-primary btn-sm">
-                                                <i class="fas fa-edit me-1"></i>Change Topic
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Activity Log -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="activity-log">
-                                <h5><i class="fas fa-list-ul me-2"></i>Activity Log</h5>
-                                <div class="timeline">
-                                    <div class="timeline-item">
-                                        <div class="timeline-dot"></div>
-                                        <div class="timeline-content">
-                                            <p class="timeline-date">{{ last_execution if last_execution else 'Just now' }}</p>
-                                            <p class="timeline-text">Newsletter delivered to {{ user_email }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="timeline-item">
-                                        <div class="timeline-dot"></div>
-                                        <div class="timeline-content">
-                                            <p class="timeline-date">{{ last_execution if last_execution else 'Just now' }}</p>
-                                            <p class="timeline-text">Data gathered from multiple sources</p>
-                                        </div>
-                                    </div>
-                                    <div class="timeline-item">
-                                        <div class="timeline-dot"></div>
-                                        <div class="timeline-content">
-                                            <p class="timeline-date">{{ last_execution if last_execution else 'Just now' }}</p>
-                                            <p class="timeline-text">Monitoring started for "{{ active_topic }}"</p>
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center">
+                                                <div class="icon-container me-2">
+                                                    <i class="fas fa-envelope text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <span class="text-muted">Recipient</span>
+                                                    <h5 class="mb-0">{{ user_email }}</h5>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            
+                            {% if last_execution %}
+                                <div class="update-status-panel">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-history text-muted me-2"></i>
+                                        <span class="text-muted">Update Schedule</span>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center">
+                                                <div class="time-block me-2">
+                                                    <i class="fas fa-check-circle text-success"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Last update</small>
+                                                    <strong>{{ last_execution }}</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex align-items-center">
+                                                <div class="time-block me-2">
+                                                    <i class="fas fa-clock text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block">Next update</small>
+                                                    <strong>{{ next_execution }}</strong>
+                                                    {% if time_remaining %}
+                                                        <span id="nextUpdate" data-next-execution="{{ next_execution }}" class="time-remaining ms-2">{{ time_remaining }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
-                    </div>
-                    
-                    <!-- Controls -->
-                    <div class="row">
-                        <div class="col-12 text-center">
+                        <div class="col-lg-4 text-center text-lg-end mt-3 mt-lg-0">
                             <form action="{{ url_for('stop_newsletter') }}" method="post">
                                 <button type="submit" class="btn btn-danger">
                                     <i class="fas fa-stop-circle me-2"></i>Stop Monitoring
                                 </button>
                             </form>
-                            <p class="small text-muted mt-3">
-                                You will no longer receive updates if you stop monitoring.
-                            </p>
                         </div>
                     </div>
                 </div>
-                <!-- FIN SECTION ACTIVE MONITORING -->
+                
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>About This Monitoring</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>Your newsletter monitoring for <strong>{{ active_topic }}</strong> is active. Here's what's happening:</p>
+                        <ul class="mb-0">
+                            <li>Our system searches for the latest information about your topic every hour</li>
+                            <li>We analyze and summarize the most relevant content</li>
+                            <li>A formatted email is delivered to your inbox</li>
+                            <li>Each update includes recent news, research papers, and developments</li>
+                        </ul>
+                    </div>
+                </div>
+                
             {% else %}
                 {% if not is_configured %}
                     <div class="form-container">
-                        <h3><i class="fas fa-cogs me-2"></i>Configure Your Newsletter</h3>
-                        <p class="text-muted mb-4">Set up API keys and email settings to start receiving newsletters</p>
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="me-3">
+                                <i class="fas fa-cogs fa-2x text-primary"></i>
+                            </div>
+                            <div>
+                                <h3 class="mb-1">Configure Your Newsletter</h3>
+                                <p class="text-muted mb-0">Set up API keys and email settings to start receiving newsletters</p>
+                            </div>
+                        </div>
                         
                         <form method="post" action="{{ url_for('index') }}" class="needs-validation" novalidate>
                             <input type="hidden" name="setup" value="1">
                             
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="tavily_api_key" class="form-label">Tavily API Key</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-key"></i></span>
-                                        <input type="password" class="form-control" id="tavily_api_key" name="tavily_api_key" 
-                                               required placeholder="Enter your Tavily API key">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('tavily_api_key')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </div>
-                                    <div class="form-text">Get a key from <a href="https://tavily.com" target="_blank">tavily.com</a></div>
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-key me-2"></i>API Keys</h5>
                                 </div>
-                                
-                                <div class="col-md-6 mb-3">
-                                    <label for="gemini_api_key" class="form-label">Gemini API Key</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-key"></i></span>
-                                        <input type="password" class="form-control" id="gemini_api_key" name="gemini_api_key" 
-                                               required placeholder="Enter your Gemini API key">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('gemini_api_key')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="tavily_api_key" class="form-label">Tavily API Key</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                                <input type="password" class="form-control" id="tavily_api_key" name="tavily_api_key" 
+                                                       required placeholder="Enter your Tavily API key">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('tavily_api_key')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                            <div class="form-text">
+                                                <a href="https://tavily.com" target="_blank" class="text-decoration-none">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Get from tavily.com
+                                                </a>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-md-6 mb-3">
+                                            <label for="gemini_api_key" class="form-label">Gemini API Key</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text"><i class="fas fa-key"></i></span>
+                                                <input type="password" class="form-control" id="gemini_api_key" name="gemini_api_key" 
+                                                       required placeholder="Enter your Gemini API key">
+                                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('gemini_api_key')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                            <div class="form-text">
+                                                <a href="https://ai.google.dev" target="_blank" class="text-decoration-none">
+                                                    <i class="fas fa-external-link-alt me-1"></i>Get from Google AI Studio
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="form-text">Get a key from <a href="https://ai.google.dev" target="_blank">Google AI Studio</a></div>
                                 </div>
                             </div>
                             
-                            <div class="mb-3">
-                                <label for="user_email" class="form-label">Your Email Address</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                    <input type="email" class="form-control" id="user_email" name="user_email" 
-                                           required placeholder="your.email@example.com">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-envelope me-2"></i>Email Configuration</h5>
                                 </div>
-                                <div class="form-text">Where you'll receive newsletter updates</div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="user_email" class="form-label">Your Email Address</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                            <input type="email" class="form-control" id="user_email" name="user_email" 
+                                                   required placeholder="your.email@example.com">
+                                        </div>
+                                        <div class="form-text">Where you'll receive newsletter updates</div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -219,18 +207,32 @@
                     </div>
                 {% else %}
                     <div class="alert alert-success fixed mb-4">
-                        <i class="fas fa-check-circle me-2"></i>Configuration saved for: <strong>{{ user_email }}</strong>
-                        <p class="mb-0 mt-2">You're ready to start monitoring topics of interest.</p>
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="fas fa-check-circle fa-2x"></i>
+                            </div>
+                            <div>
+                                <h4 class="alert-heading mb-1">Configuration Complete</h4>
+                                <p class="mb-0">Your account is configured for <strong>{{ user_email }}</strong></p>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-container">
-                        <h3><i class="fas fa-rss me-2"></i>Start Newsletter Monitoring</h3>
-                        <p class="text-muted mb-4">Choose a topic to monitor and receive regular updates</p>
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="me-3">
+                                <i class="fas fa-rss fa-2x text-primary"></i>
+                            </div>
+                            <div>
+                                <h3 class="mb-1">Start Newsletter Monitoring</h3>
+                                <p class="text-muted mb-0">Choose a topic to monitor and receive regular updates</p>
+                            </div>
+                        </div>
                         
                         <form method="post" action="{{ url_for('index') }}" class="needs-validation" novalidate>
-                            <div class="mb-3">
+                            <div class="mb-4">
                                 <label for="topic_input" class="form-label">Topic to Monitor</label>
-                                <div class="input-group">
+                                <div class="input-group input-group-lg">
                                     <span class="input-group-text"><i class="fas fa-search"></i></span>
                                     <input type="text" class="form-control" id="topic_input" name="topic" required 
                                            placeholder="e.g., Artificial Intelligence, Climate Change, Quantum Computing">
@@ -238,8 +240,8 @@
                                 <div class="form-text">You'll receive hourly updates about this topic</div>
                             </div>
                             
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                <button type="submit" class="btn btn-primary">
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="fas fa-play-circle me-2"></i>Start Monitoring
                                 </button>
                             </div>
@@ -247,22 +249,61 @@
                     </div>
                     
                     <div class="card mt-4">
-                        <div class="card-header bg-light">
+                        <div class="card-header">
                             <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>How It Works</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <ol class="ps-3">
-                                        <li>Enter a topic of interest above</li>
-                                        <li>The system will search for the latest news, research, and developments</li>
-                                        <li>A summary is generated and sent to your email</li>
-                                        <li>Updates are sent hourly to keep you informed</li>
-                                    </ol>
+                            <div class="row align-items-center">
+                                <div class="col-lg-7">
+                                    <div class="how-it-works-steps">
+                                        <div class="step d-flex mb-3">
+                                            <div class="step-number me-3">
+                                                <span class="badge bg-primary rounded-circle p-2" style="width: 30px; height: 30px;">1</span>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">Choose a Topic</h6>
+                                                <p class="text-muted mb-0">Enter any subject you'd like to monitor</p>
+                                            </div>
+                                        </div>
+                                        <div class="step d-flex mb-3">
+                                            <div class="step-number me-3">
+                                                <span class="badge bg-primary rounded-circle p-2" style="width: 30px; height: 30px;">2</span>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">Automatic Research</h6>
+                                                <p class="text-muted mb-0">We search for the latest news every hour</p>
+                                            </div>
+                                        </div>
+                                        <div class="step d-flex mb-3">
+                                            <div class="step-number me-3">
+                                                <span class="badge bg-primary rounded-circle p-2" style="width: 30px; height: 30px;">3</span>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">Smart Summarization</h6>
+                                                <p class="text-muted mb-0">AI creates a digestible summary</p>
+                                            </div>
+                                        </div>
+                                        <div class="step d-flex">
+                                            <div class="step-number me-3">
+                                                <span class="badge bg-primary rounded-circle p-2" style="width: 30px; height: 30px;">4</span>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">Email Delivery</h6>
+                                                <p class="text-muted mb-0">Receive updates directly to your inbox</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="alert alert-info mb-0">
-                                        <i class="fas fa-lightbulb me-2"></i><strong>Tip:</strong> For best results, use specific topics rather than broad categories.
+                                <div class="col-lg-5 mt-3 mt-lg-0">
+                                    <div class="card h-100">
+                                        <div class="card-body bg-light">
+                                            <h6 class="mb-2"><i class="fas fa-lightbulb text-warning me-2"></i>Pro Tips</h6>
+                                            <ul class="mb-0 ps-3">
+                                                <li class="mb-2">Use specific topics for focused results</li>
+                                                <li class="mb-2">Try emerging tech topics for cutting-edge news</li>
+                                                <li>Combine keywords for specialized monitoring</li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -292,5 +333,39 @@
             icon.classList.add('fa-eye');
         }
     }
+    
+    // Form validation with visual feedback
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.needs-validation');
+        
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                
+                form.classList.add('was-validated');
+            }, false);
+            
+            // Live validation feedback
+            const inputs = form.querySelectorAll('input[required]');
+            inputs.forEach(input => {
+                input.addEventListener('blur', () => {
+                    if (input.checkValidity()) {
+                        input.classList.add('is-valid');
+                        input.classList.remove('is-invalid');
+                    } else {
+                        input.classList.add('is-invalid');
+                        input.classList.remove('is-valid');
+                    }
+                });
+                
+                input.addEventListener('input', () => {
+                    input.classList.remove('is-invalid');
+                });
+            });
+        });
+    });
 </script>
 {% endblock %}
