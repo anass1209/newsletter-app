@@ -136,11 +136,15 @@ def stop_scheduling():
     if scheduler_thread is not None and scheduler_thread.is_alive():
         logging.info(f"Arrêt du scheduler pour le sujet '{active_topic}'.")
         stop_scheduler.set()
-        scheduler_thread.join(timeout=5)  # Attendre 5 secondes max
         
-        # Vérifier si le thread s'est bien arrêté
-        if scheduler_thread.is_alive():
-            logging.warning("Le thread du scheduler n'a pas pu être arrêté proprement.")
+        try:
+            scheduler_thread.join(timeout=5)  # Attendre 5 secondes max
+            
+            # Vérifier si le thread s'est bien arrêté
+            if scheduler_thread.is_alive():
+                logging.warning("Le thread du scheduler n'a pas pu être arrêté proprement.")
+        except Exception as e:
+            logging.error(f"Erreur lors de l'arrêt du thread: {e}")
         
         # Nettoyer les jobs planifiés
         schedule.clear()
@@ -156,6 +160,13 @@ def stop_scheduling():
         return True
     else:
         logging.info("Aucun scheduler actif à arrêter.")
+        # Assurez-vous que les variables globales sont bien nettoyées
+        scheduler_thread = None
+        active_topic = None
+        active_email = None
+        last_execution_time = None
+        next_execution_time = None
+        schedule.clear()
         return False
 
 

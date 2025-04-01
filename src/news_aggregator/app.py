@@ -133,7 +133,7 @@ def index():
 
 @app.route('/api/status')
 def api_status():
-    """API endpoint pour le statut du scheduler (utilisé par AJAX)"""
+    """API endpoint for scheduler status (used by AJAX)"""
     scheduler_state = get_active_state()
     time_remaining = None
     next_execution = None
@@ -144,44 +144,21 @@ def api_status():
             next_exec = datetime.fromisoformat(scheduler_state['next_execution'])
             next_execution = next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
             now = datetime.now(paris_tz)
-            
             if next_exec > now:
                 diff_seconds = (next_exec - now).total_seconds()
-                minutes = int(diff_seconds // 60)
-                seconds = int(diff_seconds % 60)
-                time_remaining = f"{minutes} min {seconds} sec"
+                time_remaining = f"{int(diff_seconds // 60)} min {int(diff_seconds % 60)} sec"
             else:
-                time_remaining = "très bientôt"
-                
-                # Si c'est dépassé, mettre à jour le temps de prochaine exécution
-                # pour qu'il soit à l'heure suivante
-                current_hour = now.hour
-                next_hour = current_hour + 1
-                if next_hour >= 24:
-                    next_hour = 0
-                
-                updated_next_exec = now.replace(hour=next_hour, minute=0, second=0, microsecond=0)
-                scheduler_state['next_execution'] = updated_next_exec.isoformat()
-                next_execution = updated_next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
+                time_remaining = "very soon"
         except Exception as e:
-            logging.error(f"Erreur lors du formatage des dates API: {e}")
-            # Valeurs par défaut pour éviter NaN
-            time_remaining = "bientôt"
-            
-    # Si le monitoring est actif mais qu'il n'y a pas de time_remaining,
-    # fournir une valeur par défaut
-    if scheduler_state['active'] and not time_remaining:
-        time_remaining = "en attente"
+            logging.error(f"Error formatting API dates: {e}")
 
     return jsonify({
         "active": scheduler_state['active'],
         "topic": scheduler_state['topic'],
-        "next_execution": next_execution,
-        "time_remaining": time_remaining,
-        "timestamp": datetime.now().isoformat()  # Horodatage pour les diagnostics
+        "next_execution": scheduler_state['next_execution'],  # Renvoyer la date ISO complète pour JavaScript
+        "formatted_next": next_execution,  # Format lisible pour l'affichage
+        "time_remaining": time_remaining
     })
-
-
 
 @app.route('/stop', methods=['POST'])
 def stop_newsletter():
