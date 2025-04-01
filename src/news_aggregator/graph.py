@@ -3,7 +3,7 @@ from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
 from tavily import TavilyClient
 import google.generativeai as genai
-import config
+from . import config
 from utils import send_email
 from datetime import datetime
 import pytz
