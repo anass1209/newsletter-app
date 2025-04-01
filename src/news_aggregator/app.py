@@ -74,7 +74,12 @@ def index():
                 if compiled_graph:
                     # Generate and send the newsletter immediately
                     send_newsletter_now(compiled_graph, topic, session['user_email'])
-                    flash(f'Newsletter for "{topic}" has been generated and sent to your email.', 'success')
+                    # Create a formatted success message with HTML styling
+                    success_html = f'''
+                    <strong>Newsletter Sent Successfully!</strong><br>
+                    Your newsletter about <strong>"{topic}"</strong> has been generated and sent to <strong>{session['user_email']}</strong>.
+                    '''
+                    flash(success_html, 'success')
                     session['last_topic'] = topic
                     logging.info(f"Successfully generated newsletter for topic: {topic}")
                 else:
