@@ -28,15 +28,20 @@ def run_graph_job(compiled_graph: StateGraph, topic: str, user_email: str):
     """
     global active_topic, active_email, last_execution_time, next_execution_time
     
-    # Enregistrer le moment d'exécution
+    # Enregistrer le moment d'exécution avec l'heure locale correcte
     paris_tz = pytz.timezone('Europe/Paris')
     last_execution_time = datetime.now(paris_tz)
+    
+    # Calculer la prochaine exécution (exactement 1 heure après)
     next_execution_time = last_execution_time.replace(
-        minute=last_execution_time.minute, 
+        minute=0, 
         second=0, 
         microsecond=0
     )
-    next_execution_time = next_execution_time.replace(hour=next_execution_time.hour + 1)
+    
+    # S'assurer que c'est une heure plus tard
+    if next_execution_time <= last_execution_time:
+        next_execution_time = next_execution_time.replace(hour=next_execution_time.hour + 1)
     
     logging.info(f"--- Début de l'exécution planifiée pour le sujet: '{topic}' à {last_execution_time.strftime('%H:%M:%S')} ---")
     try:
@@ -176,5 +181,24 @@ def get_active_state():
     
     if next_execution_time:
         result["next_execution"] = next_execution_time.isoformat()
+        
+    # Vérifie si next_execution_time est dépassé et met à jour si nécessaire
+    if is_active and next_execution_time:
+        now = datetime.now(next_execution_time.tzinfo)
+        if next_execution_time < now:
+            # Mettre à jour pour l'heure suivante
+            updated_next = now.replace(
+                minute=0, 
+                second=0, 
+                microsecond=0,
+                hour=now.hour + 1
+            )
+            
+            if updated_next.hour >= 24:
+                updated_next = updated_next.replace(hour=0, day=updated_next.day+1)
+                
+            global next_execution_time
+            next_execution_time = updated_next
+            result["next_execution"] = next_execution_time.isoformat()
     
     return result
