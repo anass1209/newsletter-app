@@ -1,3 +1,4 @@
+import secrets
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import os
 import logging
@@ -16,6 +17,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%
 # Flask app initialization
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'dev_secret_key')  # Use a secure key in production
+app.secret_key = os.getenv('FLASK_SECRET_KEY', secrets.token_hex(32))
+
+
 
 # Compile LangGraph once at startup
 try:
