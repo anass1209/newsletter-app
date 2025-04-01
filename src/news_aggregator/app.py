@@ -161,15 +161,22 @@ def index():
     )
 
 
-
-
-# Function to generate and send newsletter immediately
 def send_newsletter_now(graph, topic, user_email):
     """Generate and send a newsletter immediately."""
     from .graph import GraphState
+    from . import config
     
     try:
         logging.info(f"--- Starting newsletter generation for topic: '{topic}' ---")
+        
+        # Verify that API keys are configured before proceeding
+        if not config.TAVILY_API_KEY:
+            logging.error("Tavily API key is not configured for newsletter generation")
+            raise Exception("Tavily API key not configured. Please update your settings.")
+            
+        if not config.GEMINI_API_KEY:
+            logging.error("Gemini API key is not configured for newsletter generation")
+            raise Exception("Gemini API key not configured. Please update your settings.")
         
         # Create input state
         paris_tz = pytz.timezone('Europe/Paris')
@@ -186,6 +193,7 @@ def send_newsletter_now(graph, topic, user_email):
         )
         
         # Execute graph
+        logging.info(f"Invoking newsletter graph for topic: '{topic}'")
         result = graph.invoke(inputs)
         
         # Handle result
@@ -199,7 +207,6 @@ def send_newsletter_now(graph, topic, user_email):
     except Exception as e:
         logging.error(f"Newsletter generation error: {str(e)}")
         raise
-
 
 
 

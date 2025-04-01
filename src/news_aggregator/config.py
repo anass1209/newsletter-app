@@ -58,6 +58,12 @@ def set_credentials(tavily_key: str, gemini_key: str, user_email: str, sender_em
     """Set application credentials."""
     global TAVILY_API_KEY, GEMINI_API_KEY, USER_EMAIL, SENDER_EMAIL, SENDER_APP_PASSWORD
     
+    # Log start of credential setting with partial key masking
+    tavily_masked = tavily_key[:4] + "*****" if tavily_key else "None"
+    gemini_masked = gemini_key[:4] + "*****" if gemini_key else "None"
+    logging.info(f"Setting credentials - Tavily: {tavily_masked}, Gemini: {gemini_masked}, Email: {user_email}")
+    
+    # Set values to globals
     TAVILY_API_KEY = tavily_key
     GEMINI_API_KEY = gemini_key
     USER_EMAIL = user_email
@@ -66,9 +72,28 @@ def set_credentials(tavily_key: str, gemini_key: str, user_email: str, sender_em
         SENDER_EMAIL = sender_email
     if sender_password:
         SENDER_APP_PASSWORD = sender_password
-        
-    logging.info("Credentials set via UI or API.")
     
+    # Verify values have been set
+    tavily_set = bool(TAVILY_API_KEY)
+    gemini_set = bool(GEMINI_API_KEY)
+    user_set = bool(USER_EMAIL)
+    
+    logging.info(f"Credentials set status - Tavily: {tavily_set}, Gemini: {gemini_set}, User Email: {user_set}")
+    
+    # Create or update an environment file for persistence
+    try:
+        with open('.env.local', 'w') as f:
+            f.write(f"TAVILY_API_KEY={TAVILY_API_KEY or ''}\n")
+            f.write(f"GEMINI_API_KEY={GEMINI_API_KEY or ''}\n")
+            f.write(f"USER_EMAIL={USER_EMAIL or ''}\n")
+            if SENDER_EMAIL:
+                f.write(f"SENDER_EMAIL={SENDER_EMAIL}\n")
+            if SENDER_APP_PASSWORD:
+                f.write(f"SENDER_APP_PASSWORD={SENDER_APP_PASSWORD}\n")
+        logging.info("Credentials written to .env.local file for persistence")
+    except Exception as e:
+        logging.warning(f"Could not write credentials to .env.local file: {e}")
+        
     if not SENDER_EMAIL or not SENDER_APP_PASSWORD:
         logging.warning("Sender email or password missing.")
         return False

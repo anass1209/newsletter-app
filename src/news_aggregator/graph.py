@@ -29,11 +29,17 @@ def fetch_tavily_data(state: GraphState) -> GraphState:
     
     current_time = datetime.now(pytz.UTC).strftime("%d/%m/%Y at %H:%M")
 
+    # Reload configuration to ensure we have latest API keys
+    from . import config
     if not config.TAVILY_API_KEY:
         logging.error("Tavily API key not configured.")
         return {**state, "error": "Tavily API key not configured.", "timestamp": current_time}
 
     try:
+        # Log the key to debug (mask most of it for security)
+        key_part = config.TAVILY_API_KEY[:4] + "..." if config.TAVILY_API_KEY else "None"
+        logging.info(f"Using Tavily API key starting with: {key_part}")
+        
         tavily = TavilyClient(api_key=config.TAVILY_API_KEY)
         search_query = f"Latest news, research papers, developments, announcements, and breakthroughs about {topic} in the last few days"
         response = tavily.search(
@@ -66,6 +72,7 @@ def fetch_tavily_data(state: GraphState) -> GraphState:
     except Exception as e:
         logging.error(f"Tavily API call failed: {e}")
         return {**state, "error": f"Tavily error: {e}", "timestamp": current_time}
+
 
 def summarize_with_gemini(state: GraphState) -> GraphState:
     """Generate a structured summary using Gemini."""
