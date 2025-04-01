@@ -74,10 +74,18 @@ def index():
                 if compiled_graph:
                     # Generate and send the newsletter immediately
                     send_newsletter_now(compiled_graph, topic, session['user_email'])
-                    # Create a formatted success message with HTML styling
+                    
+                    # Format HTML correctement pour un affichage optimal
                     success_html = f'''
-                    <strong>Newsletter Sent Successfully!</strong><br>
-                    Your newsletter about <strong>"{topic}"</strong> has been generated and sent to <strong>{session['user_email']}</strong>.
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-1">Newsletter Sent Successfully!</h5>
+                            <p class="mb-0">Your newsletter about "<strong>{topic}</strong>" has been generated and sent to <strong>{session['user_email']}</strong>.</p>
+                        </div>
+                    </div>
                     '''
                     flash(success_html, 'success')
                     session['last_topic'] = topic
@@ -125,7 +133,20 @@ def index():
             )
             session['user_email'] = user_email
             session['configured'] = True
-            flash('Configuration updated successfully.', 'success')
+            
+            # Également utiliser un format HTML amélioré pour le message de succès de configuration
+            config_success_html = '''
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="fas fa-check-circle fa-2x text-success"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1">Configuration Updated</h5>
+                    <p class="mb-0">Your newsletter settings have been successfully updated.</p>
+                </div>
+            </div>
+            '''
+            flash(config_success_html, 'success')
             return redirect(url_for('index'))
         
         else:
