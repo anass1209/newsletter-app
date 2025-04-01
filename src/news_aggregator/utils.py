@@ -5,8 +5,9 @@ from email.message import EmailMessage
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import logging
-import config
-from graph import build_graph
+from . import config
+# Avoid circular import - remove this line
+# from graph import build_graph
 
 def send_email(recipient_email: str, subject: str, body: str, html_body: str = None):
     """

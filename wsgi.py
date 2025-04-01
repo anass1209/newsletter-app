@@ -1,22 +1,58 @@
 # wsgi.py
 import sys
 import os
+import logging
+
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(module)s] - %(message)s')
 
 # Ajouter le répertoire racine au chemin Python
-sys.path.insert(0, os.path.dirname(__file__))
+root_dir = os.path.dirname(__file__)
+sys.path.insert(0, root_dir)
+logging.info(f"Added root directory to Python path: {root_dir}")
 
-# Ajouter le dossier src/news_aggregator/ au chemin Python
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src', 'news_aggregator'))
+# Ajouter le dossier src au chemin Python
+src_dir = os.path.join(root_dir, 'src')
+if os.path.exists(src_dir):
+    sys.path.insert(0, src_dir)
+    logging.info(f"Added src directory to Python path: {src_dir}")
+
+# Log the Python path for debugging
+logging.info(f"Python path: {sys.path}")
 
 # Créer une fonction pour l'application Flask
 def get_app():
-    # Import ici pour éviter les erreurs de référence circulaire
-    from src.news_aggregator.app import app as flask_app
-    return flask_app
+    try:
+        # Import ici pour éviter les erreurs de référence circulaire
+        from src.news_aggregator.app import app as flask_app
+        logging.info("Successfully imported Flask app")
+        return flask_app
+    except ImportError as e:
+        logging.error(f"Failed to import Flask app: {e}")
+        # Try to determine what went wrong
+        try:
+            import importlib
+            spec = importlib.util.find_spec('src.news_aggregator')
+            logging.info(f"src.news_aggregator module spec: {spec}")
+        except Exception as e2:
+            logging.error(f"Error checking module spec: {e2}")
+        raise
 
 # Exposer l'application pour Gunicorn
-application = get_app()
+try:
+    application = get_app()
+except Exception as e:
+    logging.critical(f"Failed to get Flask app: {e}")
+    # Provide a basic WSGI app for fallback
+    def application(environ, start_response):
+        status = '500 Internal Server Error'
+        headers = [('Content-type', 'text/plain; charset=utf-8')]
+        start_response(status, headers)
+        return [b'Application failed to start. Check logs for details.']
 
 # Pour les tests locaux
 if __name__ == "__main__":
-    application.run()
+    try:
+        application.run()
+    except Exception as e:
+        logging.critical(f"Error running Flask app: {e}")

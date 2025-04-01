@@ -6,7 +6,8 @@ import threading
 from datetime import datetime
 import pytz
 from langgraph.graph import StateGraph
-from graph import GraphState
+# Change the import to use relative imports for your package
+from .graph import GraphState
 
 # Variables globales pour contrôler le scheduler
 stop_scheduler = threading.Event()
@@ -182,6 +183,9 @@ def get_active_state():
 
 # Point d'exécution pour tester le scheduler seul (optionnel)
 if __name__ == '__main__':
+    # Import inside the main block to avoid circular imports
+    from .graph import build_graph
+    
     # Code de test similaire à l'original, adapté au nouveau format
     class MockGraph:
         def invoke(self, state):
