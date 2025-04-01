@@ -23,6 +23,7 @@ except Exception as e:
     logging.exception("Critical error compiling LangGraph.")
     compiled_graph = None
 
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     # Add extensive logging for debugging form submissions
@@ -85,17 +86,72 @@ def index():
                 
             return redirect(url_for('index'))
         
+        # Handle reconfiguration/modification of settings
+        elif 'reconfigure' in request.form:
+            tavily_key = request.form.get('tavily_api_key', '').strip()
+            gemini_key = request.form.get('gemini_api_key', '').strip()
+            user_email = request.form.get('user_email', '').strip()
+            
+            logging.info(f"Reconfiguration attempt with email: {user_email}")
+            
+            if not user_email:
+                flash('Email address is required.', 'error')
+                return redirect(url_for('index', settings=1))
+                
+            # Import API keys from existing config if not provided
+            from . import config
+            if not tavily_key and config.TAVILY_API_KEY:
+                tavily_key = config.TAVILY_API_KEY
+                
+            if not gemini_key and config.GEMINI_API_KEY:
+                gemini_key = config.GEMINI_API_KEY
+            
+            if not all([tavily_key, gemini_key, user_email]):
+                flash('All configuration fields are required.', 'error')
+                return redirect(url_for('index', settings=1))
+            
+            from .config import set_credentials
+            set_credentials(
+                tavily_key=tavily_key, 
+                gemini_key=gemini_key, 
+                user_email=user_email,
+                sender_email=os.getenv('SENDER_EMAIL', 'default@example.com'),
+                sender_password=os.getenv('SENDER_APP_PASSWORD', '0000')
+            )
+            session['user_email'] = user_email
+            session['configured'] = True
+            flash('Configuration updated successfully.', 'success')
+            return redirect(url_for('index'))
+        
         else:
             logging.warning(f"POST request without recognized form action. Form data: {request.form}")
             flash('Unknown form submission. Please try again.', 'warning')
             return redirect(url_for('index'))
 
+    # Check if we need to show settings page
+    show_settings = request.args.get('settings') == '1'
+    
     # Prepare display data
     app_ready = bool(compiled_graph)
     is_configured = session.get('configured', False)
     last_topic = session.get('last_topic', None)
     user_email = session.get('user_email', '')
-
+    
+    # If we need to show settings and the user is configured, show the config form
+    if show_settings and is_configured:
+        # Import the current values
+        from . import config
+        tavily_key_set = bool(config.TAVILY_API_KEY)
+        gemini_key_set = bool(config.GEMINI_API_KEY)
+        
+        return render_template(
+            'settings.html',
+            user_email=user_email,
+            tavily_key_set=tavily_key_set,
+            gemini_key_set=gemini_key_set
+        )
+    
+    # Otherwise, show the regular index page
     return render_template(
         'index.html', 
         app_ready=app_ready,
@@ -103,6 +159,9 @@ def index():
         last_topic=last_topic,
         user_email=user_email
     )
+
+
+
 
 # Function to generate and send newsletter immediately
 def send_newsletter_now(graph, topic, user_email):

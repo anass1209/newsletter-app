@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Animated scroll to elements with ID if specified in hash
     handleHashScroll();
     
-    // Ensure proper form submission and button handling
+    // Handle button click events
     setupButtonEventListeners();
 });
 
@@ -89,7 +89,7 @@ function initPasswordToggles() {
 }
 
 /**
- * Set up form submission handlers with enhanced validation and feedback
+ * Set up form submission handlers
  */
 function initFormSubmitHandlers() {
     // Newsletter generation form
@@ -105,8 +105,8 @@ function initFormSubmitHandlers() {
             } else if (generateBtn) {
                 generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Generating...';
                 generateBtn.disabled = true;
-                // Add subtle animation to button
-                generateBtn.classList.add('animate-pulse');
+                // Add visual feedback
+                newsletterForm.classList.add('opacity-75');
             }
         });
     }
@@ -127,38 +127,47 @@ function initFormSubmitHandlers() {
             }
         });
     }
-}
-
-/**
- * Set up specific event listeners for buttons
- */
-function setupButtonEventListeners() {
-    // Modify Configuration Button
-    const modifyBtn = document.getElementById('modify-config-btn');
-    if (modifyBtn) {
-        modifyBtn.addEventListener('click', function() {
-            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Loading...';
-            this.classList.add('disabled');
-            window.location.href = this.getAttribute('href');
-        });
-    }
     
-    // Generate Newsletter Button - add direct click handler
-    const generateBtn = document.getElementById('generateBtn');
-    if (generateBtn) {
-        generateBtn.addEventListener('click', function(event) {
-            const form = this.closest('form');
-            if (form && !form.checkValidity()) {
+    // Settings form
+    const settingsForm = document.getElementById('settings-form');
+    if (settingsForm) {
+        const updateBtn = document.getElementById('update-settings-btn');
+        
+        settingsForm.addEventListener('submit', function(event) {
+            if (!this.checkValidity()) {
                 event.preventDefault();
-                highlightInvalidFields(form);
-                form.reportValidity();
-            } else {
-                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Generating...';
-                this.disabled = true;
-                form.submit();
+                highlightInvalidFields(this);
+                this.reportValidity();
+            } else if (updateBtn) {
+                updateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Updating...';
+                updateBtn.disabled = true;
             }
         });
     }
+}
+
+/**
+ * Set up button event listeners
+ */
+function setupButtonEventListeners() {
+    // Settings button
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', function() {
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Loading...';
+            this.classList.add('disabled');
+        });
+    }
+    
+    // Back buttons
+    document.querySelectorAll('a.btn-outline-secondary').forEach(btn => {
+        if (btn.innerHTML.includes('Back') || btn.innerHTML.includes('Cancel')) {
+            btn.addEventListener('click', function() {
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Going back...';
+                this.classList.add('disabled');
+            });
+        }
+    });
 }
 
 /**

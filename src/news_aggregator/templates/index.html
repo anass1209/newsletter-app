@@ -38,8 +38,9 @@
 
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3><i class="fas fa-rss me-2" aria-hidden="true"></i>Generate Newsletter</h3>
-                    <a href="{{ url_for('modify_config') }}" class="btn btn-outline-primary" id="modify-config-btn">
-                        <i class="fas fa-cog me-2" aria-hidden="true"></i>Modify Configuration
+                    <!-- We're going to submit to the index route with a parameter instead -->
+                    <a href="{{ url_for('index') }}?settings=1" class="btn btn-outline-primary" id="settings-btn">
+                        <i class="fas fa-cog me-2" aria-hidden="true"></i>Settings
                     </a>
                 </div>
 
@@ -214,44 +215,42 @@
             });
         });
 
+        // Settings button
+        const settingsBtn = document.getElementById('settings-btn');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', function(event) {
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Loading Settings...';
+                this.classList.add('disabled');
+            });
+        }
+
         // Generate button loading state
         const generateBtn = document.getElementById('generateBtn');
         if (generateBtn) {
             const form = document.getElementById('newsletter-form');
-            generateBtn.addEventListener('click', function(event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    form.reportValidity();
-                } else {
-                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
-                    this.disabled = true;
-                    // Add visual feedback that the form is being submitted
-                    document.querySelector('.form-container').classList.add('opacity-75');
-                    form.submit();
-                }
-            });
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    if (!this.checkValidity()) {
+                        event.preventDefault();
+                        this.reportValidity();
+                    } else if (generateBtn) {
+                        generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Generating...';
+                        generateBtn.disabled = true;
+                    }
+                });
+            }
         }
         
-        // Add click event listener for the Modify Configuration button
-        const modifyConfigBtn = document.getElementById('modify-config-btn');
-        if (modifyConfigBtn) {
-            modifyConfigBtn.addEventListener('click', function(event) {
-                // Display a loading indicator on the button
-                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
-                this.classList.add('disabled');
-            });
-        }
-        
-        // Add event listener for the configuration form
+        // Config form
         const configForm = document.getElementById('config-form');
-        if (configForm) {
-            const saveConfigBtn = document.getElementById('save-config-btn');
+        const saveConfigBtn = document.getElementById('save-config-btn');
+        if (configForm && saveConfigBtn) {
             configForm.addEventListener('submit', function(event) {
                 if (!this.checkValidity()) {
                     event.preventDefault();
                     this.reportValidity();
-                } else if (saveConfigBtn) {
-                    saveConfigBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
+                } else {
+                    saveConfigBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Saving...';
                     saveConfigBtn.disabled = true;
                 }
             });
