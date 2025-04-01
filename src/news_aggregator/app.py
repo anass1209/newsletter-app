@@ -6,7 +6,6 @@ import pytz
 import secrets
 from dotenv import load_dotenv
 from .graph import build_graph
-from src.scheduler import start_scheduling, stop_scheduling, get_active_state
 import atexit
 
 # Logging setup
@@ -23,9 +22,6 @@ try:
 except Exception as e:
     logging.exception("Critical error compiling LangGraph.")
     compiled_graph = None
-
-# Ensure scheduler stops on app shutdown
-atexit.register(stop_scheduling)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -70,245 +66,109 @@ def index():
                 
             if not session.get('configured') or not session.get('user_email'):
                 logging.warning("Attempted to start newsletter without configuration")
-                flash('Please configure settings before starting a newsletter.', 'error')
+                flash('Please configure settings before generating a newsletter.', 'error')
                 return redirect(url_for('index'))
                 
             try:
                 if compiled_graph:
-                    stop_scheduling()
-                    # Changed from hourly to daily (24 hours)
-                    start_scheduling(compiled_graph, topic, session['user_email'], interval_hours=24)
-                    flash(f'Monitoring started for "{topic}". First email sent, next ones will be sent daily.', 'success')
-                    session['active_topic'] = topic
-                    logging.info(f"Successfully started monitoring for topic: {topic}")
+                    # Generate and send the newsletter immediately
+                    send_newsletter_now(compiled_graph, topic, session['user_email'])
+                    flash(f'Newsletter for "{topic}" has been generated and sent to your email.', 'success')
+                    session['last_topic'] = topic
+                    logging.info(f"Successfully generated newsletter for topic: {topic}")
                 else:
-                    logging.error("Compiled graph is None, cannot start monitoring")
-                    flash('Error: Unable to start monitoring service.', 'error')
+                    logging.error("Compiled graph is None, cannot generate newsletter")
+                    flash('Error: Unable to generate newsletter.', 'error')
             except Exception as e:
-                logging.exception(f"Error starting scheduling for topic '{topic}': {str(e)}")
-                flash(f'Error starting monitoring: {str(e)}', 'error')
+                logging.exception(f"Error generating newsletter for topic '{topic}': {str(e)}")
+                flash(f'Error generating newsletter: {str(e)}', 'error')
                 
-            # Add anchor to redirect to status section
-            return redirect(url_for('index', _anchor='status'))
+            return redirect(url_for('index'))
         
         else:
             logging.warning(f"POST request without recognized form action. Form data: {request.form}")
             flash('Unknown form submission. Please try again.', 'warning')
             return redirect(url_for('index'))
 
-    # Sync scheduler state with session
-    scheduler_state = get_active_state()
-    if scheduler_state['active'] and scheduler_state['topic']:
-        session['active_topic'] = scheduler_state['topic']
-    elif session.get('active_topic') and not scheduler_state['active']:
-        session.pop('active_topic', None)
-
     # Prepare display data
     app_ready = bool(compiled_graph)
     is_configured = session.get('configured', False)
-    active_topic = session.get('active_topic', None)
+    last_topic = session.get('last_topic', None)
     user_email = session.get('user_email', '')
-
-    # Format timing info
-    last_execution = None
-    next_execution = None
-    next_execution_iso = None
-    time_remaining = None
-    
-    if scheduler_state['last_execution']:
-        try:
-            # Get user timezone from cookie or use UTC as default
-            user_timezone = request.cookies.get('timezone', 'UTC')
-            try:
-                user_tz = pytz.timezone(user_timezone)
-            except pytz.exceptions.UnknownTimeZoneError:
-                user_tz = pytz.UTC
-            
-            # Last execution - Ensure it's timezone aware
-            last_exec_str = scheduler_state['last_execution']
-            # Convert ISO string to datetime
-            if '+' not in last_exec_str and 'Z' not in last_exec_str:
-                last_exec = datetime.fromisoformat(last_exec_str).replace(tzinfo=pytz.UTC)
-            else:
-                last_exec = datetime.fromisoformat(last_exec_str)
-            
-            # Convert to user's timezone
-            last_exec = last_exec.astimezone(user_tz)
-            last_execution = last_exec.strftime("%H:%M:%S")  # Format without seconds for cleaner display
-            
-            # Next execution
-            if scheduler_state['next_execution']:
-                next_exec_str = scheduler_state['next_execution']
-                # Same logic for next_exec
-                if '+' not in next_exec_str and 'Z' not in next_exec_str:
-                    next_exec = datetime.fromisoformat(next_exec_str).replace(tzinfo=pytz.UTC)
-                else:
-                    next_exec = datetime.fromisoformat(next_exec_str)
-                
-                next_exec = next_exec.astimezone(user_tz)
-                next_execution = next_exec.strftime("%H:%M:%S")
-                next_execution_iso = next_exec.isoformat()  # ISO format for JavaScript
-                
-                # Calculate remaining time
-                now = datetime.now(user_tz)  # Ensure now has timezone too
-                if next_exec > now:
-                    diff_seconds = (next_exec - now).total_seconds()
-                    
-                    # Format time remaining based on duration
-                    days = int(diff_seconds // (24 * 3600))
-                    remaining = diff_seconds % (24 * 3600)
-                    hours = int(remaining // 3600)
-                    remaining %= 3600
-                    minutes = int(remaining // 60)
-                    seconds = int(remaining % 60)
-                    
-                    if days > 0:
-                        time_remaining = f"{days}d {hours}h {minutes}m"
-                    elif hours > 0:
-                        time_remaining = f"{hours}h {minutes}m {seconds}s"
-                    else:
-                        time_remaining = f"{minutes}m {seconds}s"
-                else:
-                    time_remaining = "very soon"
-        except Exception as e:
-            logging.error(f"Error formatting dates: {e}")
-            logging.error(f"Last execution string: {scheduler_state.get('last_execution')}")
-            logging.error(f"Next execution string: {scheduler_state.get('next_execution')}")
 
     return render_template(
         'index.html', 
         app_ready=app_ready,
         is_configured=is_configured,
-        active_topic=active_topic,
-        user_email=user_email,
-        last_execution=last_execution,
-        next_execution=next_execution,
-        next_execution_iso=next_execution_iso,  # ISO format for JavaScript
-        time_remaining=time_remaining
+        last_topic=last_topic,
+        user_email=user_email
     )
 
-# Create a separate route for starting monitoring
-@app.route('/start_monitoring', methods=['POST'])
-def start_monitoring():
-    logging.info(f"POST request to start_monitoring endpoint with data: {request.form}")
-    topic = request.form.get('topic', '').strip()
+# Function to generate and send newsletter immediately
+def send_newsletter_now(graph, topic, user_email):
+    """Generate and send a newsletter immediately."""
+    from .graph import GraphState
     
-    if not topic:
-        logging.warning("Empty topic detected")
-        flash('Please enter a topic for your newsletter.', 'error')
-        return redirect(url_for('index'))
-        
-    if not session.get('configured') or not session.get('user_email'):
-        logging.warning("Attempted to start newsletter without configuration")
-        flash('Please configure settings before starting a newsletter.', 'error')
-        return redirect(url_for('index'))
-        
     try:
-        if compiled_graph:
-            stop_scheduling()
-            # Changed from hourly to daily (24 hours)
-            start_scheduling(compiled_graph, topic, session['user_email'], interval_hours=24)
-            flash(f'Monitoring started for "{topic}". First email sent, next ones will be sent daily.', 'success')
-            session['active_topic'] = topic
-            logging.info(f"Successfully started monitoring for topic: {topic}")
+        logging.info(f"--- Starting newsletter generation for topic: '{topic}' ---")
+        
+        # Create input state
+        paris_tz = pytz.timezone('Europe/Paris')
+        current_time = datetime.now(paris_tz).strftime("%d/%m/%Y at %H:%M")
+        
+        inputs = GraphState(
+            topic=topic,
+            tavily_results=[],
+            structured_summary="",
+            html_content="",
+            error=None,
+            user_email=user_email,
+            timestamp=current_time
+        )
+        
+        # Execute graph
+        result = graph.invoke(inputs)
+        
+        # Handle result
+        if result.get("error"):
+            logging.error(f"Error during graph execution: {result['error']}")
+            raise Exception(result['error'])
         else:
-            logging.error("Compiled graph is None, cannot start monitoring")
-            flash('Error: Unable to start monitoring service.', 'error')
+            logging.info("Newsletter generation and delivery completed successfully")
+            return True
+            
     except Exception as e:
-        logging.exception(f"Error starting scheduling for topic '{topic}': {str(e)}")
-        flash(f'Error starting monitoring: {str(e)}', 'error')
-        
-    # Use URL fragment for anchor
-    return redirect(url_for('index', _anchor='status'))
+        logging.error(f"Newsletter generation error: {str(e)}")
+        raise
 
-@app.route('/api/status')
-def api_status():
-    """API endpoint for scheduler status (used by AJAX)"""
-    scheduler_state = get_active_state()
-    time_remaining = None
-    next_execution = None
-    
-    if scheduler_state['next_execution']:
-        try:
-            # Get user timezone from cookie or use UTC as default
-            user_timezone = request.cookies.get('timezone', 'UTC')
-            try:
-                user_tz = pytz.timezone(user_timezone)
-            except pytz.exceptions.UnknownTimeZoneError:
-                user_tz = pytz.UTC
-            
-            # Convert ISO string to datetime object - with timezone awareness
-            next_exec_str = scheduler_state['next_execution']
-            if '+' not in next_exec_str and 'Z' not in next_exec_str:
-                next_exec = datetime.fromisoformat(next_exec_str).replace(tzinfo=pytz.UTC)
-            else:
-                next_exec = datetime.fromisoformat(next_exec_str)
-            
-            # Format for human-readable display in user's timezone
-            next_exec = next_exec.astimezone(user_tz)
-            next_execution = next_exec.strftime("%H:%M:%S")
-            
-            # Get current time in same timezone
-            now = datetime.now(user_tz)
-            
-            # Calculate difference
-            if next_exec > now:
-                diff_seconds = (next_exec - now).total_seconds()
-                
-                # Format time remaining based on duration
-                days = int(diff_seconds // (24 * 3600))
-                remaining = diff_seconds % (24 * 3600)
-                hours = int(remaining // 3600)
-                remaining %= 3600
-                minutes = int(remaining // 60)
-                seconds = int(remaining % 60)
-                
-                if days > 0:
-                    time_remaining = f"{days}d {hours}h {minutes}m"
-                elif hours > 0:
-                    time_remaining = f"{hours}h {minutes}m {seconds}s"
-                else:
-                    time_remaining = f"{minutes}m {seconds}s"
-            else:
-                time_remaining = "very soon"
-                
-        except Exception as e:
-            logging.error(f"Error formatting API dates: {e}")
-            logging.error(f"next_execution string: {scheduler_state['next_execution']}")
-    
-    # Return more detailed information for client-side debugging
-    response_data = {
-        "active": scheduler_state['active'],
-        "topic": scheduler_state['topic'],
-        "next_execution": scheduler_state.get('next_execution'),  # ISO format for JavaScript
-        "formatted_next": next_execution,                     # Readable format
-        "time_remaining": time_remaining,                     # Calculated remaining time
-        "server_time": datetime.now(pytz.UTC).isoformat(),  # Server time in UTC
-        "last_execution": scheduler_state.get('last_execution')
-    }
-    
-    return jsonify(response_data)
-
-@app.route('/stop', methods=['POST'])
-def stop_newsletter():
-    """Stop the active newsletter"""
-    logging.info("Stop newsletter request received")
-    try:
-        logging.info("Attempting to stop newsletter monitoring...")
-        stop_result = stop_scheduling()
-        session.pop('active_topic', None)
+@app.route('/modify_config', methods=['GET', 'POST'])
+def modify_config():
+    """Allow users to modify their configuration"""
+    if request.method == 'POST':
+        tavily_key = request.form.get('tavily_api_key', '').strip()
+        gemini_key = request.form.get('gemini_api_key', '').strip()
+        user_email = request.form.get('user_email', '').strip()
         
-        if stop_result:
-            flash('Monitoring stopped successfully.', 'success')
-            logging.info("Newsletter monitoring stopped successfully")
-        else:
-            flash('No active monitoring to stop.', 'info')
-            logging.info("No active monitoring to stop")
-    except Exception as e:
-        logging.error(f"Error stopping newsletter: {e}")
-        flash(f'Error stopping newsletter: {str(e)}', 'error')
-        
-    return redirect(url_for('index'))
+        if not all([tavily_key, gemini_key, user_email]):
+            flash('All configuration fields are required.', 'error')
+            return redirect(url_for('modify_config'))
+            
+        from .config import set_credentials
+        set_credentials(
+            tavily_key=tavily_key, 
+            gemini_key=gemini_key, 
+            user_email=user_email,
+            sender_email=os.getenv('SENDER_EMAIL', 'default@example.com'),
+            sender_password=os.getenv('SENDER_APP_PASSWORD', '0000')
+        )
+        session['user_email'] = user_email
+        session['configured'] = True
+        flash('Configuration updated successfully.', 'success')
+        return redirect(url_for('index'))
+    
+    # For GET requests, show the config form
+    user_email = session.get('user_email', '')
+    return render_template('modify_config.html', user_email=user_email)
 
 @app.errorhandler(404)
 def page_not_found(e):
