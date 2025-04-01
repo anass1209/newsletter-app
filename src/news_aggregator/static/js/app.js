@@ -1,7 +1,5 @@
-// src/news_aggregator/static/js/app.js
-
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-hide alerts after a few seconds
+    // Masquer automatiquement les alertes après quelques secondes
     setTimeout(function() {
         const alerts = document.querySelectorAll('.alert.alert-info, .alert-success:not(.fixed)');
         alerts.forEach(function(alert) {
@@ -14,20 +12,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 5000);
     
-    // Initialize countdown for next update
+    // Initialiser le compteur pour la prochaine mise à jour
     if (document.getElementById('nextUpdate')) {
         startCountdown();
     }
 
-    // Update status information regularly
+    // Mettre à jour régulièrement les informations de statut 
     if (document.querySelector('.status-container')) {
-        // First call after 5 seconds
+        // Premier appel après 5 secondes
         setTimeout(refreshStatus, 5000);
-        // Then every 30 seconds
+        // Ensuite toutes les 30 secondes
         setInterval(refreshStatus, 30000);
     }
 
-    // Add event listeners for toggle buttons
+    // Ajouter des écouteurs d'événements pour les boutons de bascule
     const toggleConfigBtn = document.querySelector('[onclick="toggleConfigForm()"]');
     if (toggleConfigBtn) {
         toggleConfigBtn.addEventListener('click', toggleConfigForm);
@@ -38,23 +36,20 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleTopicBtn.addEventListener('click', toggleTopicForm);
     }
 
-    // Handle Stop Monitoring button
+    // Gestion du bouton Stop Monitoring
     const stopButton = document.querySelector('form[action="/stop"] button');
     if (stopButton) {
-        stopButton.addEventListener('click', function(e) {
-            // Show processing state
+        stopButton.addEventListener('click', function() {
             stopButton.disabled = true;
-            stopButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Stopping...';
-            
-            // Submit form normally - no need to prevent default
+            stopButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Arrêt en cours...';
         });
     }
 
-    // Initialize password toggles
+    // Gestion de la visibilité des mots de passe
     initPasswordToggles();
 });
 
-// Function to toggle configuration form display
+// Fonction pour basculer l'affichage du formulaire de configuration
 function toggleConfigForm() {
     const form = document.getElementById('configForm');
     if (form) {
@@ -67,7 +62,7 @@ function toggleConfigForm() {
     }
 }
 
-// Function to toggle topic form display
+// Fonction pour basculer l'affichage du formulaire de sujet
 function toggleTopicForm() {
     const form = document.getElementById('topicForm');
     if (form) {
@@ -80,7 +75,7 @@ function toggleTopicForm() {
     }
 }
 
-// Function to initialize password toggles
+// Fonction pour initialiser les toggles de mots de passe
 function initPasswordToggles() {
     document.querySelectorAll('.input-group .btn-outline-secondary').forEach(button => {
         button.addEventListener('click', function() {
@@ -100,25 +95,20 @@ function initPasswordToggles() {
     });
 }
 
-// Function to refresh status via API
+// Fonction pour mettre à jour le statut
 function refreshStatus() {
     fetch('/api/status')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             console.log("Status update received:", data);
             
-            // If monitoring is no longer active but page shows active, reload
+            // Si le monitoring n'est plus actif, recharger la page
             if (document.querySelector('.status-container') && !data.active) {
                 window.location.reload();
                 return;
             }
             
-            // Update next execution time
+            // Mettre à jour le prochain temps d'exécution
             updateTimerWithData(data);
         })
         .catch(error => {
@@ -126,40 +116,40 @@ function refreshStatus() {
         });
 }
 
-// Function to update timer with received data
+// Fonction pour mettre à jour le timer avec les données reçues
 function updateTimerWithData(data) {
     if (!data || !data.next_execution) return;
     
     const nextUpdateElement = document.getElementById('nextUpdate');
     if (!nextUpdateElement) return;
     
-    // Update data attribute
+    // Mettre à jour l'attribut data
     nextUpdateElement.dataset.nextExecution = data.next_execution;
     
-    // If timer shows NaN, restart countdown
+    // Si le timer affiche NaN, redémarrer le compte à rebours
     if (nextUpdateElement.textContent.includes('NaN')) {
         startCountdown();
     } else if (data.time_remaining) {
-        // Otherwise just update the text
-        nextUpdateElement.innerHTML = `<i class="fas fa-hourglass-half me-1"></i>${data.time_remaining}`;
+        // Sinon, simplement mettre à jour le texte
+        nextUpdateElement.textContent = data.time_remaining;
     }
 }
 
-// Function for countdown to next update
+// Fonction pour le compte à rebours jusqu'à la prochaine mise à jour
 function startCountdown() {
     const nextUpdateElement = document.getElementById('nextUpdate');
     if (!nextUpdateElement) return;
     
-    // Get reference time
+    // Obtenir le temps de référence
     let nextUpdate = null;
     
     if (nextUpdateElement.dataset.nextExecution) {
         try {
-            // Try to parse ISO date
+            // Essayer de parser la date ISO
             nextUpdate = new Date(nextUpdateElement.dataset.nextExecution);
             console.log("Next execution parsed:", nextUpdate);
             
-            // Check if date is valid
+            // Vérifier si la date est valide
             if (isNaN(nextUpdate.getTime())) {
                 console.log("Invalid date format, using fallback");
                 nextUpdate = null;
@@ -170,44 +160,43 @@ function startCountdown() {
         }
     }
     
-    // If no valid date, use now + 24 hours as fallback (for daily updates)
+    // Si pas de date valide, utiliser maintenant + 1 heure comme fallback
     if (!nextUpdate) {
         const now = new Date();
-        nextUpdate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        nextUpdate = new Date(now.getTime() + 60 * 60 * 1000);
         console.log("Using fallback next execution:", nextUpdate);
     }
     
-    // Function to update countdown
+    // Fonction pour mettre à jour le compte à rebours
     function updateTimer() {
         const now = new Date();
         const diffMs = nextUpdate - now;
         
-        // If time has passed
+        // Si le temps est dépassé
         if (diffMs <= 0) {
-            nextUpdateElement.innerHTML = '<i class="fas fa-clock me-1"></i> very soon';
+            nextUpdateElement.textContent = "très bientôt";
             
-            // Reload status after 10 seconds
+            // Recharger le statut après 10 secondes
             setTimeout(refreshStatus, 10000);
             return;
         }
         
-        // Calculate hours, minutes and seconds - better for daily updates
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        // Calculer minutes et secondes
         const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
         
-        // Display remaining time in format that shows hours
-        nextUpdateElement.innerHTML = `<i class="fas fa-hourglass-half me-1"></i>${hours}h ${minutes}m ${seconds}s`;
+        // Afficher le temps restant
+        nextUpdateElement.textContent = `${minutes} min ${seconds} sec`;
         
-        // Update every second
+        // Mettre à jour chaque seconde
         setTimeout(updateTimer, 1000);
     }
     
-    // Start countdown
+    // Démarrer le compte à rebours
     updateTimer();
 }
 
-// Function to toggle password visibility
+// Ajouter une fonction pour basculer la visibilité du mot de passe
 function togglePassword(inputId) {
     const input = document.getElementById(inputId);
     const icon = input.parentNode.querySelector('.fa-eye, .fa-eye-slash');
