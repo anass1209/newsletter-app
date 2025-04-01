@@ -37,9 +37,9 @@ def _execute_task(graph, topic, user_email):
     try:
         logging.info(f"--- Starting scheduled execution for topic: '{topic}' at {datetime.now().strftime('%H:%M:%S')} ---")
         
-        # Create input state
-        paris_tz = pytz.timezone('Europe/Paris')
-        current_time = datetime.now(paris_tz).strftime("%d/%m/%Y at %H:%M")
+        # Create input state - use UTC for storing timestamps
+        current_time = datetime.now(pytz.UTC)
+        formatted_time = current_time.strftime("%d/%m/%Y at %H:%M")
         
         inputs = GraphState(
             topic=topic,
@@ -48,11 +48,11 @@ def _execute_task(graph, topic, user_email):
             html_content="",
             error=None,
             user_email=user_email,
-            timestamp=current_time
+            timestamp=formatted_time
         )
         
-        # Record execution time
-        _scheduler_state["last_execution"] = datetime.now().isoformat()
+        # Record execution time in UTC with timezone info
+        _scheduler_state["last_execution"] = current_time.isoformat()
         
         # Execute graph
         result = graph.invoke(inputs)
@@ -83,22 +83,22 @@ def _scheduler_loop(graph, topic, user_email, interval_hours):
     # Execute immediately on start
     _execute_task(graph, topic, user_email)
     
-    # Calculate next execution time
-    next_run = datetime.now() + timedelta(hours=interval_hours)
+    # Calculate next execution time (in UTC)
+    next_run = datetime.now(pytz.UTC) + timedelta(hours=interval_hours)
     _scheduler_state["next_execution"] = next_run.isoformat()
-    logging.info(f"Next execution scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
+    logging.info(f"Next execution scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S %Z')}")
     
     while not _stop_event.is_set():
         # Check if it's time to run
-        now = datetime.now()
+        now = datetime.now(pytz.UTC)
         if now >= next_run:
             # Execute the task
             _execute_task(graph, topic, user_email)
             
-            # Calculate next execution time
+            # Calculate next execution time (in UTC)
             next_run = now + timedelta(hours=interval_hours)
             _scheduler_state["next_execution"] = next_run.isoformat()
-            logging.info(f"Next execution scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
+            logging.info(f"Next execution scheduled for: {next_run.strftime('%Y-%m-%d %H:%M:%S %Z')}")
         
         # Sleep for a while before checking again (60 seconds)
         for _ in range(60):

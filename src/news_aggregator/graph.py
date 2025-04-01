@@ -27,9 +27,8 @@ def fetch_tavily_data(state: GraphState) -> GraphState:
     topic = state['topic']
     logging.info(f"Fetching advanced search for: {topic}")
     
-    paris_tz = pytz.timezone('Europe/Paris')
-    current_time = datetime.now(paris_tz).strftime("%d/%m/%Y at %H:%M")
-    
+    current_time = datetime.now(pytz.UTC).strftime("%d/%m/%Y at %H:%M")
+
     if not config.TAVILY_API_KEY:
         logging.error("Tavily API key not configured.")
         return {**state, "error": "Tavily API key not configured.", "timestamp": current_time}
@@ -207,7 +206,7 @@ if __name__ == '__main__':
             html_content="",
             error=None,
             user_email=config.USER_EMAIL,
-            timestamp=""
+            timestamp=datetime.now(pytz.UTC).strftime("%d/%m/%Y at %H:%M")
         )
         print("\n--- Graph Execution (Test) ---")
         results = test_graph.invoke(inputs)

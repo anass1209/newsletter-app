@@ -9,7 +9,7 @@
             <div class="alert alert-warning" role="alert">
                 <div class="d-flex align-items-center">
                     <div class="me-3">
-                        <i class="fas fa-cog fa-spin fa-2x"></i>
+                        <i class="fas fa-cog fa-spin fa-2x" aria-hidden="true"></i> {# Ajout potentiel aria-hidden #}
                     </div>
                     <div>
                         <h4 class="alert-heading mb-1">Application Initializing</h4>
@@ -22,18 +22,18 @@
             </div>
         {% else %}
             {% if is_configured and active_topic %}
-                <div id="status" class="status-container">
+                <div id="status" class="status-container mb-4"> {# Ajout mb-4 pour espacement #}
                     <div class="row align-items-center">
                         <div class="col-md-8">
-                            <h3><i class="fas fa-satellite-dish me-2"></i>Active Monitoring</h3>
-                            
+                            <h3><i class="fas fa-satellite-dish me-2" aria-hidden="true"></i>Active Monitoring</h3>
+
                             <div class="card mb-3">
                                 <div class="card-body py-3">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="d-flex align-items-center">
                                                 <div class="icon-container me-2">
-                                                    <i class="fas fa-search text-primary"></i>
+                                                    <i class="fas fa-search text-primary" aria-hidden="true"></i>
                                                 </div>
                                                 <div>
                                                     <span class="text-muted">Topic</span>
@@ -44,7 +44,7 @@
                                         <div class="col-md-6">
                                             <div class="d-flex align-items-center">
                                                 <div class="icon-container me-2">
-                                                    <i class="fas fa-envelope text-primary"></i>
+                                                    <i class="fas fa-envelope text-primary" aria-hidden="true"></i>
                                                 </div>
                                                 <div>
                                                     <span class="text-muted">Recipient</span>
@@ -55,18 +55,18 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {% if last_execution %}
                                 <div class="update-status-panel">
                                     <div class="d-flex align-items-center mb-2">
-                                        <i class="fas fa-history text-muted me-2"></i>
+                                        <i class="fas fa-history text-muted me-2" aria-hidden="true"></i>
                                         <span class="text-muted">Update Schedule</span>
                                     </div>
                                     <div class="row">
-                                        <div class="col-md-6">
+                                        <div class="col-md-6 mb-2 mb-md-0"> {# Ajout marge responsive #}
                                             <div class="d-flex align-items-center">
                                                 <div class="time-block me-2">
-                                                    <i class="fas fa-check-circle text-success"></i>
+                                                    <i class="fas fa-check-circle text-success" aria-hidden="true"></i>
                                                 </div>
                                                 <div>
                                                     <small class="text-muted d-block">Last update</small>
@@ -77,21 +77,26 @@
                                         <div class="col-md-6">
                                             <div class="d-flex align-items-center">
                                                 <div class="time-block me-2">
-                                                    <i class="fas fa-clock text-primary"></i>
+                                                    <i class="fas fa-clock text-primary" aria-hidden="true"></i>
                                                 </div>
                                                 <div>
                                                     <small class="text-muted d-block">Next update</small>
-                                                    <strong class="next-update-time">{{ next_execution }}</strong>
+                                                    <strong class="next-update-time">
+                                                        {% if next_execution %}
+                                                            {{ next_execution }}
+                                                        {% else %}
+                                                            <span class="badge bg-warning text-dark">None scheduled</span>
+                                                        {% endif %}
+                                                    </strong>
                                                     <div class="mt-1">
-                                                        <span id="nextUpdate" 
-                                                              data-next-execution="{{ next_execution_iso }}" 
-                                                              class="badge bg-primary">
-                                                            <i class="fas fa-hourglass-half me-1"></i>
+                                                        <span id="nextUpdate"
+                                                              data-next-execution="{{ next_execution_iso }}"
+                                                              class="badge {% if time_remaining %}bg-primary{% else %}bg-warning text-dark{% endif %}">
+                                                            <i class="fas {% if time_remaining %}fa-hourglass-half{% else %}fa-exclamation-circle{% endif %} me-1" aria-hidden="true"></i>
                                                             {% if time_remaining %}
                                                                 {{ time_remaining }}
                                                             {% else %}
-                                                                <span class="spinner-border spinner-border-sm" role="status"></span>
-                                                                <span class="ms-1">Calculating...</span>
+                                                                No upcoming update
                                                             {% endif %}
                                                         </span>
                                                     </div>
@@ -105,85 +110,88 @@
                         <div class="col-md-4 text-center text-md-end mt-3 mt-md-0">
                             <form action="{{ url_for('stop_newsletter') }}" method="post">
                                 <button type="submit" class="btn btn-danger" id="stopMonitoringBtn">
-                                    <i class="fas fa-stop-circle me-2"></i>Stop Monitoring
+                                    <i class="fas fa-stop-circle me-2" aria-hidden="true"></i>Stop Monitoring
                                 </button>
                             </form>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>About This Monitoring</h5>
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2" aria-hidden="true"></i>About This Monitoring</h5>
                     </div>
                     <div class="card-body">
                         <p>Your newsletter monitoring for <strong>{{ active_topic }}</strong> is active. Here's what's happening:</p>
                         <ul class="mb-0">
-                            <li>Our system searches for the latest information about your topic once every day</li>
-                            <li>We analyze and summarize the most relevant content</li>
-                            <li>A formatted email is delivered to your inbox</li>
-                            <li>Each update includes recent news, research papers, and developments</li>
+                            <li>Our system searches for the latest information about your topic once every day.</li> {# Ajout point final #}
+                            <li>We analyze and summarize the most relevant content.</li> {# Ajout point final #}
+                            <li>A formatted email is delivered to your inbox.</li> {# Ajout point final #}
+                            <li>Each update includes recent news, research papers, and developments.</li> {# Ajout point final #}
                         </ul>
                     </div>
                 </div>
-                
+
             {% else %}
                 {% if not is_configured %}
                     <div class="form-container">
-                        <h3><i class="fas fa-cogs me-2"></i>Configure Newsletter</h3>
-                        <form method="post" action="{{ url_for('index') }}">
+                        <h3><i class="fas fa-cogs me-2" aria-hidden="true"></i>Configure Newsletter</h3>
+                        <form method="post" action="{{ url_for('index') }}"> {# Ou idéalement une route dédiée comme /configure #}
                             <input type="hidden" name="setup" value="1">
-                            
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="tavily_api_key" class="form-label">Tavily API Key</label>
                                     <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-key"></i></span>
-                                        <input type="password" class="form-control" id="tavily_api_key" name="tavily_api_key" 
+                                        <span class="input-group-text"><i class="fas fa-key" aria-hidden="true"></i></span>
+                                        <input type="password" class="form-control" id="tavily_api_key" name="tavily_api_key"
                                                required placeholder="Enter your Tavily API key">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('tavily_api_key')">
-                                            <i class="fas fa-eye"></i>
+                                        {# CORRECTION: onclick retiré #}
+                                        <button class="btn btn-outline-secondary" type="button">
+                                            <i class="fas fa-eye" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                     <div class="form-text">Get from <a href="https://tavily.com" target="_blank">tavily.com</a></div>
                                 </div>
-                                
+
                                 <div class="col-md-6 mb-3">
                                     <label for="gemini_api_key" class="form-label">Gemini API Key</label>
                                     <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-key"></i></span>
-                                        <input type="password" class="form-control" id="gemini_api_key" name="gemini_api_key" 
+                                        <span class="input-group-text"><i class="fas fa-key" aria-hidden="true"></i></span>
+                                        <input type="password" class="form-control" id="gemini_api_key" name="gemini_api_key"
                                                required placeholder="Enter your Gemini API key">
-                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('gemini_api_key')">
-                                            <i class="fas fa-eye"></i>
+                                        {# CORRECTION: onclick retiré #}
+                                        <button class="btn btn-outline-secondary" type="button">
+                                            <i class="fas fa-eye" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                     <div class="form-text">Get from <a href="https://ai.google.dev" target="_blank">Google AI Studio</a></div>
                                 </div>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="user_email" class="form-label">Your Email Address</label>
                                 <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                    <input type="email" class="form-control" id="user_email" name="user_email" 
+                                    <span class="input-group-text"><i class="fas fa-envelope" aria-hidden="true"></i></span>
+                                    <input type="email" class="form-control" id="user_email" name="user_email"
                                            required placeholder="your.email@example.com">
                                 </div>
                                 <div class="form-text">Where you'll receive newsletter updates</div>
                             </div>
-                            
+
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save me-2"></i>Save Configuration
+                                    <i class="fas fa-save me-2" aria-hidden="true"></i>Save Configuration
                                 </button>
                             </div>
                         </form>
                     </div>
                 {% else %}
-                    <div class="alert alert-success fixed mb-4">
+                    {# CORRECTION: Classe "fixed" retirée de l'alerte #}
+                    <div class="alert alert-success mb-4">
                         <div class="d-flex">
                             <div class="me-3">
-                                <i class="fas fa-check-circle fa-2x"></i>
+                                <i class="fas fa-check-circle fa-2x" aria-hidden="true"></i>
                             </div>
                             <div>
                                 <h4 class="alert-heading mb-1">Configuration Complete</h4>
@@ -191,73 +199,72 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="form-container">
-                        <h3><i class="fas fa-rss me-2"></i>Start Newsletter Monitoring</h3>
-                        <p class="text-muted mb-4">Choose a topic to monitor and receive regular updates</p>
-                        
-                        <!-- MODIFICATION: Changed form action to use the dedicated endpoint -->
+                        <h3><i class="fas fa-rss me-2" aria-hidden="true"></i>Start Newsletter Monitoring</h3>
+                        <p class="text-muted mb-4">Choose a topic to monitor and receive regular updates.</p> {# Ajout point final #}
+
                         <form method="post" action="{{ url_for('start_monitoring') }}">
                             <div class="mb-4">
                                 <label for="topic_input" class="form-label">Topic to Monitor</label>
                                 <div class="input-group input-group-lg">
-                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                                    <input type="text" class="form-control" id="topic_input" name="topic" required 
+                                    <span class="input-group-text"><i class="fas fa-search" aria-hidden="true"></i></span>
+                                    <input type="text" class="form-control" id="topic_input" name="topic" required
                                            placeholder="e.g., Artificial Intelligence, Climate Change, Quantum Computing">
                                 </div>
-                                <div class="form-text">You'll receive daily updates about this topic</div>
+                                <div class="form-text">You'll receive daily updates about this topic.</div> {# Ajout point final #}
                             </div>
-                            
+
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary btn-lg" id="startMonitoringBtn">
-                                    <i class="fas fa-play-circle me-2"></i>Start Monitoring
+                                    <i class="fas fa-play-circle me-2" aria-hidden="true"></i>Start Monitoring
                                 </button>
                             </div>
                         </form>
                     </div>
-                    
+
                     <div class="card mt-4">
                         <div class="card-header">
-                            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>How It Works</h5>
+                            <h5 class="mb-0"><i class="fas fa-info-circle me-2" aria-hidden="true"></i>How It Works</h5>
                         </div>
                         <div class="card-body">
                             <div class="row align-items-center">
                                 <div class="col-lg-7">
                                     <div class="how-it-works-steps">
                                         <div class="step d-flex mb-3">
-                                            <div class="step-number me-3">
-                                                <span class="badge bg-primary rounded-circle p-2" style="width: 30px; height: 30px;">1</span>
+                                            <div class="step-number me-3 align-self-center"> {# Ajout align-self-center #}
+                                                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">1</span>
                                             </div>
                                             <div>
                                                 <h6 class="mb-1">Choose a Topic</h6>
-                                                <p class="text-muted mb-0">Enter any subject you'd like to monitor</p>
+                                                <p class="text-muted mb-0">Enter any subject you'd like to monitor.</p> {# Ajout point final #}
                                             </div>
                                         </div>
                                         <div class="step d-flex mb-3">
-                                            <div class="step-number me-3">
-                                                <span class="badge bg-primary rounded-circle p-2" style="width: 30px; height: 30px;">2</span>
+                                            <div class="step-number me-3 align-self-center"> {# Ajout align-self-center #}
+                                                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">2</span>
                                             </div>
                                             <div>
                                                 <h6 class="mb-1">Automatic Research</h6>
-                                                <p class="text-muted mb-0">We search for the latest news daily</p>
+                                                <p class="text-muted mb-0">We search for the latest news daily.</p> {# Ajout point final #}
                                             </div>
                                         </div>
                                         <div class="step d-flex mb-3">
-                                            <div class="step-number me-3">
-                                                <span class="badge bg-primary rounded-circle p-2" style="width: 30px; height: 30px;">3</span>
+                                            <div class="step-number me-3 align-self-center"> {# Ajout align-self-center #}
+                                                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">3</span>
                                             </div>
                                             <div>
                                                 <h6 class="mb-1">Smart Summarization</h6>
-                                                <p class="text-muted mb-0">AI creates a digestible summary</p>
+                                                <p class="text-muted mb-0">AI creates a digestible summary.</p> {# Ajout point final #}
                                             </div>
                                         </div>
                                         <div class="step d-flex">
-                                            <div class="step-number me-3">
-                                                <span class="badge bg-primary rounded-circle p-2" style="width: 30px; height: 30px;">4</span>
+                                            <div class="step-number me-3 align-self-center"> {# Ajout align-self-center #}
+                                                <span class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 30px; height: 30px;">4</span>
                                             </div>
                                             <div>
                                                 <h6 class="mb-1">Email Delivery</h6>
-                                                <p class="text-muted mb-0">Receive updates directly to your inbox</p>
+                                                <p class="text-muted mb-0">Receive updates directly to your inbox.</p> {# Ajout point final #}
                                             </div>
                                         </div>
                                     </div>
@@ -265,11 +272,11 @@
                                 <div class="col-lg-5 mt-3 mt-lg-0">
                                     <div class="card h-100">
                                         <div class="card-body bg-light">
-                                            <h6 class="mb-2"><i class="fas fa-lightbulb text-warning me-2"></i>Pro Tips</h6>
+                                            <h6 class="mb-2"><i class="fas fa-lightbulb text-warning me-2" aria-hidden="true"></i>Pro Tips</h6>
                                             <ul class="mb-0 ps-3">
-                                                <li class="mb-2">Use specific topics for focused results</li>
-                                                <li class="mb-2">Try emerging tech topics for cutting-edge news</li>
-                                                <li>Combine keywords for specialized monitoring</li>
+                                                <li class="mb-2">Use specific topics for focused results.</li> {# Ajout point final #}
+                                                <li class="mb-2">Try emerging tech topics for cutting-edge news.</li> {# Ajout point final #}
+                                                <li>Combine keywords for specialized monitoring.</li> {# Ajout point final #}
                                             </ul>
                                         </div>
                                     </div>
@@ -285,12 +292,94 @@
 {% endblock %}
 
 {% block scripts %}
+{% block scripts %}
 <script>
-    // Toggle password visibility
-    function togglePassword(inputId) {
-        const input = document.getElementById(inputId);
-        const icon = input.parentNode.querySelector('.fa-eye, .fa-eye-slash');
-        
+    document.addEventListener('DOMContentLoaded', function() {
+        // Détection et stockage précis du fuseau horaire
+        try {
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            document.cookie = `timezone=${encodeURIComponent(timezone)}; path=/; max-age=86400; SameSite=Lax`;
+            console.log("Set timezone cookie to:", timezone);
+        } catch(e) {
+            console.warn("Could not detect timezone:", e);
+        }
+
+        // Scroll vers #status si nécessaire
+        if (window.location.hash === '#status') {
+            const statusElement = document.getElementById('status');
+            if (statusElement) {
+                setTimeout(function() {
+                    statusElement.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        }
+
+        // CORRECTION: Attacher les écouteurs pour la visibilité du mot de passe
+        const toggleBtns = document.querySelectorAll('.input-group .btn-outline-secondary');
+        toggleBtns.forEach(btn => {
+            // Vérifier si le bouton contient une icône d'oeil pour être plus spécifique
+            if (btn.querySelector('.fa-eye, .fa-eye-slash')) {
+                btn.addEventListener('click', function() {
+                    performTogglePassword(this); // Appeler la fonction dédiée
+                });
+            }
+        });
+
+        // Bouton "Start Monitoring" avec validation et indication de chargement
+        const startButton = document.getElementById('startMonitoringBtn');
+        if (startButton) {
+            startButton.addEventListener('click', function(event) {
+                const form = this.closest('form');
+                if (!form.checkValidity()) {
+                    // Si invalide, empêcher la soumission
+                    event.preventDefault();
+                    form.reportValidity();
+                } else {
+                    // Si valide, afficher l'état de chargement
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Starting...';
+                    this.disabled = true;
+                }
+            });
+            
+            // S'assurer que le formulaire est bien soumis même si JS est activé
+            const startForm = startButton.closest('form');
+            if (startForm) {
+                startForm.addEventListener('submit', function() {
+                    // Désactiver le bouton quand la soumission commence réellement
+                    if(startButton.disabled == false) { // Éviter double exécution
+                        startButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Starting...';
+                        startButton.disabled = true;
+                    }
+                });
+            }
+        }
+
+        // Bouton "Stop Monitoring" avec indication de chargement
+        const stopButton = document.getElementById('stopMonitoringBtn');
+        if (stopButton) {
+            const stopForm = stopButton.closest('form');
+            if (stopForm) {
+                stopForm.addEventListener('submit', function() {
+                    stopButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Stopping...';
+                    stopButton.disabled = true;
+                });
+            }
+        }
+
+        // Initialiser le compte à rebours
+        if (document.getElementById('nextUpdate')) {
+            startCountdown();
+        }
+    });
+
+    // Fonction pour basculer la visibilité du mot de passe
+    function performTogglePassword(button) {
+        const inputGroup = button.closest('.input-group');
+        if (!inputGroup) return; // Sécurité
+        const input = inputGroup.querySelector('input');
+        const icon = button.querySelector('i');
+        if (!input || !icon) return; // Sécurité
+
         if (input.type === 'password') {
             input.type = 'text';
             icon.classList.remove('fa-eye');
@@ -302,44 +391,179 @@
         }
     }
 
-    // Add loading indicators to buttons when clicked
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add loading state to Start Monitoring button
-        const startButton = document.getElementById('startMonitoringBtn');
-        if (startButton) {
-            startButton.addEventListener('click', function() {
-                // Make sure form is valid before showing loading state
-                const form = this.closest('form');
-                if (form.checkValidity()) {
-                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Starting...';
-                    this.disabled = true;
-                    // Submit the form explicitly
-                    form.submit();
-                } else {
-                    // If form is invalid, trigger browser validation UI
-                    form.reportValidity();
-                }
-            });
-        }
+    // Fonction de compte à rebours avec gestion d'erreurs améliorée
+    function startCountdown() {
+        const nextUpdateElement = document.getElementById('nextUpdate');
+        if (!nextUpdateElement) return;
 
-        // Add loading state to Stop Monitoring button
-        const stopButton = document.getElementById('stopMonitoringBtn');
-        if (stopButton) {
-            stopButton.addEventListener('click', function() {
-                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Stopping...';
-                this.disabled = true;
-                // Submit the form explicitly
-                this.closest('form').submit();
-            });
-        }
-        
-        // Scroll to status section if URL has the status anchor
-        if (window.location.hash === '#status') {
-            const statusElement = document.getElementById('status');
-            if (statusElement) {
-                statusElement.scrollIntoView({ behavior: 'smooth' });
+        let nextUpdate = null;
+        if (nextUpdateElement.dataset.nextExecution) {
+            try {
+                nextUpdate = new Date(nextUpdateElement.dataset.nextExecution);
+                if (isNaN(nextUpdate.getTime())) {
+                    console.warn("Invalid date format received:", nextUpdateElement.dataset.nextExecution);
+                    nextUpdate = null; // Force fallback
+                }
+            } catch(e) {
+                console.error("Error parsing date:", e);
+                nextUpdate = null; // Force fallback
             }
         }
-    });
+
+        // Fallback si date invalide ou non fournie
+        if (!nextUpdate) {
+            nextUpdateElement.innerHTML = '<i class="fas fa-exclamation-circle me-1"></i>No scheduled update';
+            nextUpdateElement.classList.remove('bg-primary', 'bg-danger');
+            nextUpdateElement.classList.add('bg-warning', 'text-dark');
+            console.warn("Using fallback display for next execution time.");
+            return; // Arrêter le compte à rebours ici
+        }
+
+        // Fonction interne de mise à jour
+        function updateTimer() {
+            const now = new Date();
+            const diffMs = nextUpdate - now;
+
+            if (diffMs <= 0) {
+                nextUpdateElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+                nextUpdateElement.classList.remove('bg-warning', 'text-dark', 'bg-danger');
+                nextUpdateElement.classList.add('bg-primary');
+                setTimeout(refreshStatus, 10000); // Tenter de rafraîchir le statut
+                return;
+            }
+
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+            let displayText = '';
+            if (days > 0) {
+                displayText = `${days}d ${hours}h ${minutes}m`;
+            } else if (hours > 0) {
+                displayText = `${hours}h ${minutes}m ${seconds}s`;
+            } else {
+                displayText = `${minutes}m ${seconds}s`;
+            }
+
+            nextUpdateElement.innerHTML = `<i class="fas fa-hourglass-half me-1"></i>${displayText}`;
+            nextUpdateElement.classList.remove('bg-warning', 'text-dark', 'bg-danger');
+            nextUpdateElement.classList.add('bg-primary');
+
+            setTimeout(updateTimer, 1000);
+        }
+
+        updateTimer(); // Démarrer
+    }
+
+    // Fonction de rafraîchissement du statut
+    function refreshStatus() {
+        fetch('/api/status')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Status received:", data);
+                
+                const statusContainer = document.querySelector('.status-container');
+                // Si on est sur la page de monitoring mais que l'API dit que ce n'est plus actif
+                if (statusContainer && !data.active) {
+                    console.log("Monitoring stopped, reloading page.");
+                    window.location.reload();
+                    return;
+                }
+                // Si on n'est PAS sur la page de monitoring mais que l'API dit que c'est actif
+                else if (!statusContainer && data.active) {
+                    console.log("Monitoring started elsewhere, reloading page to show status.");
+                    window.location.reload();
+                    return;
+                }
+
+                // Mise à jour des éléments si on est sur la page de monitoring
+                if (statusContainer) {
+                    updateTimerWithData(data);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching status:", error);
+                
+                // Gérer l'erreur, afficher un message à l'utilisateur
+                const nextUpdateElement = document.getElementById('nextUpdate');
+                if (nextUpdateElement) {
+                    nextUpdateElement.innerHTML = `<i class="fas fa-exclamation-triangle me-1"></i>Update error`;
+                    nextUpdateElement.classList.remove('bg-primary', 'bg-warning', 'text-dark');
+                    nextUpdateElement.classList.add('bg-danger');
+                }
+            });
+    }
+
+    // Fonction de mise à jour du timer avec les données API
+    function updateTimerWithData(data) {
+        if (!data) return;
+
+        const nextUpdateElement = document.getElementById('nextUpdate');
+        const nextExecutionElement = document.querySelector('.next-update-time');
+        const lastUpdateElement = document.getElementById('lastUpdate');
+
+        // Mise à jour du dernier temps d'exécution
+        if (lastUpdateElement && data.last_execution) {
+            const formatted = formatApiDate(data.last_execution);
+            if (formatted) {
+                lastUpdateElement.textContent = formatted;
+            }
+        }
+
+        // Mise à jour du prochain temps d'exécution
+        if (nextExecutionElement) {
+            if (data.formatted_next) {
+                nextExecutionElement.textContent = data.formatted_next;
+            } else {
+                nextExecutionElement.innerHTML = `<span class="badge bg-warning text-dark">None scheduled</span>`;
+            }
+        }
+
+        // Mise à jour du badge de compte à rebours
+        if (nextUpdateElement) {
+            if (data.next_execution) {
+                // Mettre à jour l'attribut data pour le compte à rebours
+                nextUpdateElement.dataset.nextExecution = data.next_execution;
+                
+                // Si le compte à rebours affiche des erreurs, le redémarrer
+                if (nextUpdateElement.textContent.includes('NaN') || 
+                    nextUpdateElement.textContent.includes('error')) {
+                    startCountdown();
+                }
+                // Sinon, juste mettre à jour l'affichage si on a une valeur time_remaining
+                else if (data.time_remaining) {
+                    nextUpdateElement.innerHTML = `<i class="fas fa-hourglass-half me-1"></i>${data.time_remaining}`;
+                    nextUpdateElement.classList.remove('bg-warning', 'text-dark', 'bg-danger');
+                    nextUpdateElement.classList.add('bg-primary');
+                }
+            } else {
+                // Pas de prochaine exécution prévue
+                nextUpdateElement.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>No upcoming update`;
+                nextUpdateElement.classList.remove('bg-primary', 'bg-danger');
+                nextUpdateElement.classList.add('bg-warning', 'text-dark');
+                nextUpdateElement.removeAttribute('data-next-execution');
+            }
+        }
+    }
+
+    // Fonction utilitaire pour formater les dates API
+    function formatApiDate(isoString) {
+        try {
+            const date = new Date(isoString);
+            if (isNaN(date.getTime())) return null;
+            
+            // Format hours and minutes with leading zeros
+            return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+        } catch (e) {
+            console.error("Error formatting date:", e);
+            return null;
+        }
+    }
 </script>
 {% endblock %}
