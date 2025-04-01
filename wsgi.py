@@ -6,12 +6,12 @@ import logging
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%(module)s] - %(message)s')
 
-# Ajouter le répertoire racine au chemin Python
+# Add root directory to Python path
 root_dir = os.path.dirname(__file__)
 sys.path.insert(0, root_dir)
 logging.info(f"Added root directory to Python path: {root_dir}")
 
-# Ajouter le dossier src au chemin Python
+# Add src directory to Python path
 src_dir = os.path.join(root_dir, 'src')
 if os.path.exists(src_dir):
     sys.path.insert(0, src_dir)
@@ -20,10 +20,10 @@ if os.path.exists(src_dir):
 # Log the Python path for debugging
 logging.info(f"Python path: {sys.path}")
 
-# Créer une fonction pour l'application Flask
+# Create a function for the Flask application
 def get_app():
     try:
-        # Import ici pour éviter les erreurs de référence circulaire
+        # Import here to avoid circular reference errors
         from src.news_aggregator.app import app as flask_app
         logging.info("Successfully imported Flask app")
         return flask_app
@@ -38,7 +38,7 @@ def get_app():
             logging.error(f"Error checking module spec: {e2}")
         raise
 
-# Exposer l'application pour Gunicorn
+# Expose the application for Gunicorn
 try:
     application = get_app()
 except Exception as e:
@@ -50,7 +50,7 @@ except Exception as e:
         start_response(status, headers)
         return [b'Application failed to start. Check logs for details.']
 
-# Pour les tests locaux
+# For local testing
 if __name__ == "__main__":
     try:
         application.run()

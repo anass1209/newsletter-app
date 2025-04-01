@@ -73,8 +73,9 @@ def index():
             try:
                 if compiled_graph:
                     stop_scheduling()
-                    start_scheduling(compiled_graph, topic, session['user_email'], interval_hours=1)
-                    flash(f'Monitoring started for "{topic}". First email sent, next ones hourly.', 'success')
+                    # Changed from hourly to daily (24 hours)
+                    start_scheduling(compiled_graph, topic, session['user_email'], interval_hours=24)
+                    flash(f'Monitoring started for "{topic}". First email sent, next ones will be sent daily.', 'success')
                     session['active_topic'] = topic
                     logging.info(f"Successfully started monitoring for topic: {topic}")
                 else:
@@ -84,7 +85,8 @@ def index():
                 logging.exception(f"Error starting scheduling for topic '{topic}': {str(e)}")
                 flash(f'Error starting monitoring: {str(e)}', 'error')
                 
-            return redirect(url_for('index'))
+            # Add anchor to redirect to status section
+            return redirect(url_for('index', _anchor='status'))
 
     # Sync scheduler state with session
     scheduler_state = get_active_state()
@@ -107,26 +109,40 @@ def index():
     
     if scheduler_state['last_execution']:
         try:
-            # Fuseau horaire de Paris
+            # Paris timezone
             paris_tz = pytz.timezone('Europe/Paris')
             
-            # Dernière exécution
+            # Last execution
             last_exec = datetime.fromisoformat(scheduler_state['last_execution'])
             last_execution = last_exec.astimezone(paris_tz).strftime("%H:%M:%S")
             
-            # Prochaine exécution
+            # Next execution
             if scheduler_state['next_execution']:
                 next_exec = datetime.fromisoformat(scheduler_state['next_execution'])
                 next_execution = next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
-                next_execution_iso = scheduler_state['next_execution']  # Format ISO pour JavaScript
+                next_execution_iso = scheduler_state['next_execution']  # ISO format for JavaScript
                 
-                # Calculer le temps restant
+                # Calculate remaining time
                 now = datetime.now(paris_tz)
                 if next_exec > now:
                     diff_seconds = (next_exec - now).total_seconds()
-                    time_remaining = f"{int(diff_seconds // 60)} min {int(diff_seconds % 60)} sec"
+                    
+                    # Format time remaining based on duration
+                    days = int(diff_seconds // (24 * 3600))
+                    remaining = diff_seconds % (24 * 3600)
+                    hours = int(remaining // 3600)
+                    remaining %= 3600
+                    minutes = int(remaining // 60)
+                    seconds = int(remaining % 60)
+                    
+                    if days > 0:
+                        time_remaining = f"{days}d {hours}h {minutes}m"
+                    elif hours > 0:
+                        time_remaining = f"{hours}h {minutes}m {seconds}s"
+                    else:
+                        time_remaining = f"{minutes}m {seconds}s"
                 else:
-                    time_remaining = "très bientôt"
+                    time_remaining = "very soon"
         except Exception as e:
             logging.error(f"Error formatting dates: {e}")
 
@@ -138,7 +154,7 @@ def index():
         user_email=user_email,
         last_execution=last_execution,
         next_execution=next_execution,
-        next_execution_iso=next_execution_iso,  # Format ISO pour JavaScript
+        next_execution_iso=next_execution_iso,  # ISO format for JavaScript
         time_remaining=time_remaining
     )
 
@@ -151,40 +167,53 @@ def api_status():
     
     if scheduler_state['next_execution']:
         try:
-            # Utiliser le fuseau horaire de Paris
+            # Use Paris timezone
             paris_tz = pytz.timezone('Europe/Paris')
             
-            # Convertir la chaîne ISO en objet datetime
+            # Convert ISO string to datetime object
             next_exec = datetime.fromisoformat(scheduler_state['next_execution'])
             
-            # Formater pour l'affichage humain
+            # Format for human-readable display
             next_execution = next_exec.astimezone(paris_tz).strftime("%H:%M:%S")
             
-            # Obtenir le temps actuel dans le même fuseau
+            # Get current time in same timezone
             now = datetime.now(paris_tz)
             
-            # Calculer la différence
+            # Calculate difference
             if next_exec > now:
                 diff_seconds = (next_exec - now).total_seconds()
-                minutes = int(diff_seconds // 60)
-                seconds = int(diff_seconds % 60)
-                time_remaining = f"{minutes} min {seconds} sec"
+                
+                # Format time remaining based on duration
+                days = int(diff_seconds // (24 * 3600))
+                remaining = diff_seconds % (24 * 3600)
+                hours = int(remaining // 3600)
+                remaining %= 3600
+                minutes = int(remaining // 60)
+                seconds = int(remaining % 60)
+                
+                if days > 0:
+                    time_remaining = f"{days}d {hours}h {minutes}m"
+                elif hours > 0:
+                    time_remaining = f"{hours}h {minutes}m {seconds}s"
+                else:
+                    time_remaining = f"{minutes}m {seconds}s"
             else:
-                time_remaining = "très bientôt"
+                time_remaining = "very soon"
                 
         except Exception as e:
             logging.error(f"Error formatting API dates: {e}")
-            # Ajouter plus de détails pour le débogage
+            # Add more details for debugging
             logging.error(f"next_execution string: {scheduler_state['next_execution']}")
     
-    # Renvoyer des informations plus détaillées pour faciliter le débogage côté client
+    # Return more detailed information for client-side debugging
     response_data = {
         "active": scheduler_state['active'],
         "topic": scheduler_state['topic'],
-        "next_execution": scheduler_state['next_execution'],  # ISO format pour JavaScript
-        "formatted_next": next_execution,                     # Format lisible
-        "time_remaining": time_remaining,                     # Temps restant calculé
-        "server_time": datetime.now(pytz.timezone('Europe/Paris')).isoformat()  # Heure serveur
+        "next_execution": scheduler_state['next_execution'],  # ISO format for JavaScript
+        "formatted_next": next_execution,                     # Readable format
+        "time_remaining": time_remaining,                     # Calculated remaining time
+        "server_time": datetime.now(pytz.timezone('Europe/Paris')).isoformat(),  # Server time
+        "last_execution": scheduler_state.get('last_execution')
     }
     
     return jsonify(response_data)
@@ -192,9 +221,21 @@ def api_status():
 @app.route('/stop', methods=['POST'])
 def stop_newsletter():
     """Stop the active newsletter"""
-    stop_scheduling()
-    session.pop('active_topic', None)
-    flash('Monitoring stopped successfully.', 'success')
+    try:
+        logging.info("Attempting to stop newsletter monitoring...")
+        stop_result = stop_scheduling()
+        session.pop('active_topic', None)
+        
+        if stop_result:
+            flash('Monitoring stopped successfully.', 'success')
+            logging.info("Newsletter monitoring stopped successfully")
+        else:
+            flash('No active monitoring to stop.', 'info')
+            logging.info("No active monitoring to stop")
+    except Exception as e:
+        logging.error(f"Error stopping newsletter: {e}")
+        flash(f'Error stopping newsletter: {str(e)}', 'error')
+        
     return redirect(url_for('index'))
 
 @app.errorhandler(404)
