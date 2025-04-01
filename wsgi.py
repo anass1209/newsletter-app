@@ -1,8 +1,19 @@
 # wsgi.py
 import sys
 import os
-sys.path.insert(0, os.path.dirname(__file__))
-from src.news_aggregator.app import app as application
 
+# Ajouter le répertoire racine au chemin Python
+sys.path.insert(0, os.path.dirname(__file__))
+
+# Créer une fonction pour l'application Flask
+def get_app():
+    # Import ici pour éviter les erreurs de référence circulaire
+    from src.news_aggregator.app import app as flask_app
+    return flask_app
+
+# Exposer l'application pour Gunicorn
+application = get_app()
+
+# Pour les tests locaux
 if __name__ == "__main__":
     application.run()

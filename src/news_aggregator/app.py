@@ -5,7 +5,7 @@ from datetime import datetime
 import pytz
 from dotenv import load_dotenv
 from src.news_aggregator import config
-from graph import build_graph
+from src.news_aggregator.graph import build_graph
 from scheduler import start_scheduling, stop_scheduling, get_active_state
 import atexit
 
