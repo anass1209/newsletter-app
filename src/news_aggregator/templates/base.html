@@ -1,31 +1,35 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Newsletter Monitoring - Service de veille automatisée pour rester informé sur vos sujets d'intérêt">
-    <meta name="theme-color" content="#0056b3">
+    <meta name="description" content="Newsletter Monitor - Automated newsletter service to stay informed on topics that matter to you">
+    <meta name="theme-color" content="#2563eb">
     <title>{% block title %}Newsletter Monitor{% endblock %}</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}">
     
-    <!-- Préchargement des ressources critiques -->
+    <!-- Preconnect for faster loading -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
+    <!-- Preload critical assets -->
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" as="style">
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" as="style">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Font Awesome pour les icônes -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- CSS personnalisé -->
+    <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
     
     {% block extra_css %}{% endblock %}
@@ -36,17 +40,19 @@
             <div class="row align-items-center">
                 <div class="col-md-8 text-center text-md-start">
                     <h1><i class="fas fa-newspaper me-2"></i>Newsletter Monitor</h1>
-                    <p class="lead mb-0">Veille intelligente sur vos sujets d'intérêt</p>
+                    <p class="lead mb-0">Stay informed on topics that matter to you</p>
                 </div>
                 <div class="col-md-4 d-none d-md-block text-end">
-                    <i class="fas fa-robot fa-3x text-white-50"></i>
+                    <div class="header-icon">
+                        <i class="fas fa-robot fa-3x text-white-50"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </header>
     
     <main class="container py-4">
-        <!-- Messages flash -->
+        <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="row">
@@ -63,7 +69,7 @@
                                     <i class="fas fa-info-circle me-2"></i>
                                 {% endif %}
                                 {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         {% endfor %}
                     </div>
@@ -71,45 +77,53 @@
             {% endif %}
         {% endwith %}
         
-        <!-- Contenu principal -->
+        <!-- Main content -->
         {% block content %}{% endblock %}
     </main>
     
     <footer class="footer">
         <div class="container">
-            <div class="row">
-                <div class="col-md-8 text-center text-md-start">
-                    <p><i class="fas fa-code me-2"></i>Newsletter Monitoring App &copy; 2025</p>
+            <div class="row align-items-center">
+                <div class="col-md-7 text-center text-md-start">
+                    <p class="mb-0">
+                        <i class="fas fa-code me-2"></i>Newsletter Monitor &copy; 2025 | 
+                        <a href="#" class="text-reset text-decoration-underline">Privacy Policy</a> | 
+                        <a href="#" class="text-reset text-decoration-underline">Terms</a>
+                    </p>
                 </div>
-                <div class="col-md-4 text-center text-md-end">
-                    <p class="small text-muted">
-                        <span data-bs-toggle="tooltip" title="Propulsé par Tavily Search API">
+                <div class="col-md-5 text-center text-md-end mt-3 mt-md-0">
+                    <div class="d-flex justify-content-center justify-content-md-end">
+                        <span data-bs-toggle="tooltip" title="Powered by Tavily Search API" class="me-3">
                             <i class="fas fa-search me-1"></i>Tavily
                         </span>
-                        <span class="mx-2">|</span>
-                        <span data-bs-toggle="tooltip" title="Intelligence avec Google Gemini">
+                        <span data-bs-toggle="tooltip" title="AI-powered by Google Gemini">
                             <i class="fas fa-brain me-1"></i>Gemini
                         </span>
-                    </p>
+                    </div>
+                    
+                    <div class="social-links mt-2">
+                        <a href="#" class="social-link" aria-label="GitHub">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="#" class="social-link" aria-label="LinkedIn">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                        <a href="#" class="social-link" aria-label="Twitter">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
     </footer>
+    
+    <!-- Toast container for notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
     
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" defer></script>
     <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
     
     {% block scripts %}{% endblock %}
-    
-    <!-- Initialisation des tooltips -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-        });
-    </script>
 </body>
 </html>

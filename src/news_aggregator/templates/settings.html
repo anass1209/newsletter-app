@@ -6,19 +6,22 @@
 <div class="row justify-content-center">
     <div class="col-md-10">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3><i class="fas fa-cogs me-2" aria-hidden="true"></i>Modify Settings</h3>
-            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>Back to Home
+            <h2 class="mb-0"><i class="fas fa-cogs me-2" aria-hidden="true"></i>Account Settings</h2>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2" aria-hidden="true"></i>Back to Dashboard
             </a>
         </div>
         
         <div class="form-container">
-            <p class="text-muted mb-4">Update your API keys and email address for newsletter delivery.</p>
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                Update your API keys and email preferences below. Leave API key fields empty to keep your current keys.
+            </div>
             
             <form method="post" action="{{ url_for('index') }}" id="settings-form">
                 <input type="hidden" name="reconfigure" value="1">
                 
-                <div class="row">
+                <div class="row g-4">
                     <div class="col-md-6 mb-3">
                         <label for="tavily_api_key" class="form-label">Tavily API Key</label>
                         <div class="input-group">
@@ -29,7 +32,13 @@
                                 <i class="fas fa-eye" aria-hidden="true"></i>
                             </button>
                         </div>
-                        <div class="form-text">{% if tavily_key_set %}Leave blank to keep the current key{% else %}Get from <a href="https://tavily.com" target="_blank">tavily.com</a>{% endif %}</div>
+                        <div class="form-text">
+                            {% if tavily_key_set %}
+                                <span class="text-success"><i class="fas fa-check-circle me-1"></i>Current key is set</span> - Leave blank to keep it
+                            {% else %}
+                                Get from <a href="https://tavily.com" target="_blank">tavily.com</a>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="col-md-6 mb-3">
@@ -42,11 +51,17 @@
                                 <i class="fas fa-eye" aria-hidden="true"></i>
                             </button>
                         </div>
-                        <div class="form-text">{% if gemini_key_set %}Leave blank to keep the current key{% else %}Get from <a href="https://ai.google.dev" target="_blank">Google AI Studio</a>{% endif %}</div>
+                        <div class="form-text">
+                            {% if gemini_key_set %}
+                                <span class="text-success"><i class="fas fa-check-circle me-1"></i>Current key is set</span> - Leave blank to keep it
+                            {% else %}
+                                Get from <a href="https://ai.google.dev" target="_blank">Google AI Studio</a>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-4 mt-2">
                     <label for="user_email" class="form-label">Your Email Address</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-envelope" aria-hidden="true"></i></span>
@@ -54,6 +69,27 @@
                                required value="{{ user_email }}">
                     </div>
                     <div class="form-text">Where you'll receive your newsletters</div>
+                </div>
+                
+                <div class="card bg-light mt-4 mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-bell me-2"></i>Email Preferences</h5>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" value="1" id="format_html" name="format_html" checked>
+                            <label class="form-check-label" for="format_html">
+                                Receive newsletters in rich HTML format
+                            </label>
+                            <div class="form-text">Uncheck for plain text emails</div>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="1" id="include_sources" name="include_sources" checked>
+                            <label class="form-check-label" for="include_sources">
+                                Include source links in newsletter
+                            </label>
+                            <div class="form-text">Helps track information sources</div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="d-flex gap-2 justify-content-end">
@@ -67,14 +103,38 @@
             </form>
         </div>
         
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-shield-alt me-2" aria-hidden="true"></i>API Key Security</h5>
+        <div class="row mt-5">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fas fa-shield-alt me-2" aria-hidden="true"></i>API Key Security</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>Your API keys are stored securely and never shared with third parties. They are used only to retrieve information and generate newsletters for you.</p>
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
+                            <strong>Important:</strong> Keep your API keys confidential. Don't share them with others or expose them in client-side code.
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <p>Your API keys are stored securely and never shared with third parties. They are used only to retrieve information and generate newsletters for you.</p>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2" aria-hidden="true"></i>Tip: If you don't want to change an API key, leave the field blank to keep using your existing key.
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fas fa-question-circle me-2" aria-hidden="true"></i>About the APIs</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h5><i class="fas fa-search text-primary me-2"></i>Tavily API</h5>
+                            <p class="mb-0">Provides powerful search capabilities across the web to find the most relevant information about your topics of interest.</p>
+                        </div>
+                        
+                        <div>
+                            <h5><i class="fas fa-brain text-primary me-2"></i>Gemini API</h5>
+                            <p class="mb-0">Google's AI technology processes and summarizes information, creating well-structured and informative newsletters.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

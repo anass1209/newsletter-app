@@ -104,12 +104,14 @@ def summarize_with_gemini(state: GraphState) -> GraphState:
         Instructions:
         1. Analyze the sources to identify recent news and key developments on "{state['topic']}".
         2. Generate a structured summary IN ENGLISH:
-           - Introduction with main news highlights
+           - Introduction with main news highlights (Start with a compelling hook)
            - 3-5 sections, each with a bold catchy title
+           - Include direct quotes when relevant (in blockquote format)
            - Cite sources (URL) in parentheses
+           - End with a brief conclusion or future outlook
         3. Keep it informative, accessible, engaging, and concise.
         4. If no recent info, state it and suggest related topics.
-        5. Provide a general newsletter title.
+        5. Provide a compelling newsletter title.
         Format in Markdown.
         """
         
@@ -122,21 +124,54 @@ def summarize_with_gemini(state: GraphState) -> GraphState:
         summary = response.text
         
         html_prompt = f"""
-        Convert this Markdown summary to elegant HTML for email:
+        Convert this Markdown summary to elegant, modern HTML for a professional email newsletter:
+        
         {summary}
+        
         Instructions:
-        1. Retain all content and structure.
-        2. Use inline CSS for email compatibility (blue palette, responsive design).
-        3. Include simple header and footer.
+        1. Create rich, well-structured HTML with:
+           - Clean, modern design elements
+           - Proper article sections with headers
+           - Blockquotes for direct quotes
+           - Visual hierarchy with proper heading levels
+           - Source citations as styled links
+           
+        2. Add these enhanced features:
+           - Format any URLs as proper HTML links
+           - For blockquotes, use elegant styling
+           - Ensure good whitespace and readability
+           - Add subtle dividers between sections
+           - Bold or highlight key points/statistics
+           - Format lists properly with spacing
+           
+        3. Very Important: DO NOT include <html>, <head>, <body> tags or any CSS - just the structured content HTML.
+        
+        4. Make it look professional and engaging for a newsletter that will appear in a CV/portfolio.
         """
+        
         html_response = model.generate_content(html_prompt)
         html_content = html_response.text if html_response.parts else summary
-        html_content = html_content.strip().replace("```html", "").replace("```", "")
+        
+        # Clean up the HTML response
+        html_content = html_content.strip()
+        if html_content.startswith("```html"):
+            html_content = html_content[7:]
+        if html_content.endswith("```"):
+            html_content = html_content[:-3]
+        html_content = html_content.strip()
+        
+        # Remove any full HTML document structure if present
+        html_content = re.sub(r'<!DOCTYPE.*?>', '', html_content, flags=re.DOTALL)
+        html_content = re.sub(r'<html.*?>.*?<body.*?>', '', html_content, flags=re.DOTALL)
+        html_content = re.sub(r'</body>.*?</html>', '', html_content, flags=re.DOTALL)
         
         return {**state, "structured_summary": summary, "html_content": html_content, "error": None}
     except Exception as e:
         logging.error(f"Gemini API call failed: {e}")
         return {**state, "error": f"Gemini error: {str(e)}"}
+
+# Import the new email template function
+from .email_template import create_enhanced_email_template
 
 def send_email_node(state: GraphState) -> GraphState:
     """Send the summary as an HTML email."""
@@ -145,47 +180,39 @@ def send_email_node(state: GraphState) -> GraphState:
         logging.warning(f"Error detected, skipping email: {state['error']}")
         return state
 
-    subject = f"Newsletter: {state['topic']} - News from {state['timestamp']}"
-    html_body = state.get('html_content', f"<h1>News on {state['topic']}</h1><p>{state['structured_summary']}</p>")
+    subject = f"Newsletter: {state['topic']} - Updates {state['timestamp']}"
     
-    if "<html" not in html_body:
-        html_body = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Newsletter: {state['topic']}</title>
-            <style>
-                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }}
-                .header {{ background-color: #3498db; color: white; padding: 10px 20px; border-radius: 5px 5px 0 0; }}
-                .content {{ padding: 20px; background-color: #f9f9f9; border: 1px solid #ddd; }}
-                .footer {{ text-align: center; font-size: 0.8em; color: #666; padding: 10px; border-top: 1px solid #ddd; }}
-                a {{ color: #3498db; text-decoration: none; }}
-                a:hover {{ text-decoration: underline; }}
-                h1, h2, h3 {{ color: #2c3e50; }}
-            </style>
-        </head>
-        <body>
-            <div class="header"><h1>News: {state['topic']}</h1><p>Updated on {state['timestamp']}</p></div>
-            <div class="content">{html_body}</div>
-            <div class="footer">
-                <p>Automated newsletter for updates on {state['topic']}.</p>
-                <p>© 2025 - News Aggregator</p>
-            </div>
-        </body>
-        </html>
-        """
-
+    # Get the HTML content or fallback to structured summary if no HTML available
+    html_body = state.get('html_content', '')
+    
+    # If no HTML was generated, format the structured summary as simple HTML
+    if not html_body:
+        html_body = f"<h1>News on {state['topic']}</h1><div>{state['structured_summary']}</div>"
+    
+    # Create enhanced email template
+    enhanced_email_html = create_enhanced_email_template(
+        topic=state['topic'],
+        content=html_body,
+        timestamp=state['timestamp']
+    )
+    
     recipient = state.get("user_email")
     if not recipient:
         logging.error("Recipient email missing.")
         return {**state, "error": "Recipient email missing."}
 
-    success = send_email(recipient_email=recipient, subject=subject, body=state['structured_summary'], html_body=html_body)
+    # Send email with the enhanced template
+    success = send_email(
+        recipient_email=recipient, 
+        subject=subject, 
+        body=state['structured_summary'],  # Plain text fallback
+        html_body=enhanced_email_html
+    )
+    
     if not success:
         return {**state, "error": "Email sending failed."}
     return state
+
 
 # Graph construction
 def build_graph() -> StateGraph:
