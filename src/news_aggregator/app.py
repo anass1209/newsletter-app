@@ -1,14 +1,12 @@
-import secrets
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import os
 import logging
 from datetime import datetime
 import pytz
+import secrets
 from dotenv import load_dotenv
-from . import config
 from .graph import build_graph
-# Change this import to use relative path
-from ..scheduler import start_scheduling, stop_scheduling, get_active_state
+from src.scheduler import start_scheduling, stop_scheduling, get_active_state
 import atexit
 
 # Logging setup
@@ -16,9 +14,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [%
 
 # Flask app initialization
 app = Flask(__name__)
+# Use a secure random key for sessions
 app.secret_key = os.getenv('FLASK_SECRET_KEY', secrets.token_hex(32))
-
-
 
 # Compile LangGraph once at startup
 try:
@@ -39,11 +36,14 @@ def index():
             gemini_key = request.form.get('gemini_api_key', '').strip()
             user_email = request.form.get('user_email', '').strip()
             
+            logging.info(f"Configuration attempt with email: {user_email}")
+            
             if not all([tavily_key, gemini_key, user_email]):
                 flash('All configuration fields are required.', 'error')
                 return redirect(url_for('index'))
                 
-            config.set_credentials(
+            from .config import set_credentials
+            set_credentials(
                 tavily_key=tavily_key, 
                 gemini_key=gemini_key, 
                 user_email=user_email,
@@ -58,12 +58,15 @@ def index():
         # Handle newsletter topic submission
         elif 'topic' in request.form:
             topic = request.form.get('topic', '').strip()
+            logging.info(f"Topic submitted: '{topic}'")
             
             if not topic:
+                logging.warning("Empty topic detected")
                 flash('Please enter a topic for your newsletter.', 'error')
                 return redirect(url_for('index'))
                 
             if not session.get('configured') or not session.get('user_email'):
+                logging.warning("Attempted to start newsletter without configuration")
                 flash('Please configure settings before starting a newsletter.', 'error')
                 return redirect(url_for('index'))
                 
@@ -73,11 +76,13 @@ def index():
                     start_scheduling(compiled_graph, topic, session['user_email'], interval_hours=1)
                     flash(f'Monitoring started for "{topic}". First email sent, next ones hourly.', 'success')
                     session['active_topic'] = topic
+                    logging.info(f"Successfully started monitoring for topic: {topic}")
                 else:
+                    logging.error("Compiled graph is None, cannot start monitoring")
                     flash('Error: Unable to start monitoring service.', 'error')
             except Exception as e:
+                logging.exception(f"Error starting scheduling for topic '{topic}': {str(e)}")
                 flash(f'Error starting monitoring: {str(e)}', 'error')
-                logging.exception("Error starting scheduling")
                 
             return redirect(url_for('index'))
 
@@ -172,7 +177,8 @@ def server_error(e):
 
 if __name__ == '__main__':
     load_dotenv()
+    from .config import load_credentials_from_env
     if os.getenv('TAVILY_API_KEY') and os.getenv('GEMINI_API_KEY'):
-        config.load_credentials_from_env()
+        load_credentials_from_env()
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)

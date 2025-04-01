@@ -75,10 +75,11 @@
                             <div class="form-container">
                                 <h3>Start Newsletter</h3>
                                 <form method="post" action="{{ url_for('index') }}">
-                                    <input type="hidden" name="topic" value="">
+                                    <!-- CORRECTION: Ne pas avoir de hidden input avec une valeur vide -->
+                                    <input type="hidden" name="topic" value="placeholder">
                                     <div class="mb-3">
-                                        <label for="topic" class="form-label">Topic to Monitor</label>
-                                        <input type="text" class="form-control" id="topic" name="topic" required 
+                                        <label for="topic_input" class="form-label">Topic to Monitor</label>
+                                        <input type="text" class="form-control" id="topic_input" name="topic" required 
                                                placeholder="e.g., Artificial Intelligence, Climate Change, Quantum Computing">
                                         <div class="form-text">Enter a topic you want to receive updates about</div>
                                     </div>

@@ -178,36 +178,3 @@ def get_active_state():
         result["next_execution"] = next_execution_time.isoformat()
     
     return result
-
-
-# Point d'exécution pour tester le scheduler seul (optionnel)
-if __name__ == '__main__':
-    # Import inside the main block to avoid circular imports
-    from news_aggregator.graph import build_graph
-    
-    # Code de test similaire à l'original, adapté au nouveau format
-    class MockGraph:
-        def invoke(self, state):
-            print(f"[{time.strftime('%H:%M:%S')}] MockGraph invoqué pour : {state['topic']}")
-            # Simuler une exécution
-            import random
-            if random.random() < 0.1:
-                print("   -> Simulation d'une erreur")
-                return {**state, "error": "Erreur simulée"}
-            else:
-                print("   -> Simulation d'un envoi d'email")
-                print(f"   -> Newsletter envoyée à {state['user_email']}")
-                return {**state, "structured_summary": "Contenu simulé", "html_content": "<p>Contenu HTML simulé</p>"}
-
-    print("Test du scheduler (exécute toutes les 10 secondes pendant 30 secondes)")
-    mock_graph = MockGraph()
-    
-    # Démarrer le scheduler avec un intervalle court pour le test
-    start_scheduling(mock_graph, "Intelligence Artificielle", "test@example.com", interval_hours=0.003) # ~10 secondes
-    
-    # Laisser tourner pendant 30 secondes
-    time.sleep(30)
-    
-    # Arrêter le scheduler
-    stop_scheduling()
-    print("Test terminé.")
