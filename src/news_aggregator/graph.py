@@ -3,8 +3,8 @@ from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
 from tavily import TavilyClient
 import google.generativeai as genai
-from src.news_aggregator import config
-from src.news_aggregator.utils import send_email
+import config
+from utils import send_email
 from datetime import datetime
 import pytz
 
