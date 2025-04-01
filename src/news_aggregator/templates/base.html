@@ -52,7 +52,7 @@
     </header>
     
     <main class="container py-4">
-        <!-- Flash messages -->
+        <!-- Flash messages - MODIFIÉ POUR UTILISER |safe POUR LE HTML -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="row">
@@ -68,7 +68,7 @@
                                 {% else %}
                                     <i class="fas fa-info-circle me-2"></i>
                                 {% endif %}
-                                {{ message }}
+                                {{ message|safe }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         {% endfor %}
